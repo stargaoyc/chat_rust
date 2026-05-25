@@ -1,0 +1,20 @@
+[package]
+name = "notify-server"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+anyhow = {workspace = true}
+axum = {workspace = true}
+axum-extra = { version = "0.12.6", features = ["typed-header"] }
+features = "0.10.0"
+futures = "0.3.32"
+serde = {workspace = true}
+serde_yaml = {workspace = true}
+sqlx = {workspace = true}
+thiserror = {workspace = true}
+tokio = {workspace = true}
+tokio-stream = "0.1.18"
+tracing = {workspace = true}
+tracing-subscriber = {workspace = true}

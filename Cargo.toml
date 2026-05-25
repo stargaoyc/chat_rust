@@ -1,13 +1,10 @@
-[package]
-name = "chat"
-version = "0.1.0"
-authors = ["stargaoyc"]
-edition = "2024"
-license = "MIT"
+[workspace]
+members = [
+    "chat_server", "notify_server",
+]
+resolve = "2"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
+[workspace.dependencies]
 anyhow = "1.0.102"
 axum = { version = "0.8.9", features = ["http2", "multipart", "query", "tracing"] }
 serde = { version = "1.0.228", features = ["derive"] }
