@@ -1,6 +1,6 @@
 -- postgres database initialization script
 -- create user table
-CREATE TABLE IF NOT EXISTS user (
+CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     fullname VARCHAR(64) NOT NULL UNIQUE,
     -- hashed argon2 password
@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS user (
     email VARCHAR(64) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- create index on email for user table
+CREATE INDEX IF NOT EXISTS email_idx ON users (email);
 
 -- create chat type
 CREATE TYPE chat_type AS ENUM ('single', 'group', 'public_channel', 'private_channel');
@@ -18,7 +21,7 @@ CREATE TABLE IF NOT EXISTS chats (
     name VARCHAR(128) NOT NULL UNIQUE,
     type chat_type NOT NULL,
     members BIGINT[] NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- create message table
@@ -31,7 +34,7 @@ CREATE TABLE IF NOT EXISTS messages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,
-    FOREIGN KEY (sender_id) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- create index on chat_id for messages table

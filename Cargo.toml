@@ -1,5 +1,5 @@
 [package]
-name = "template"
+name = "chat"
 version = "0.1.0"
 authors = ["stargaoyc"]
 edition = "2024"
@@ -8,3 +8,12 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.102"
+axum = { version = "0.8.9", features = ["http2", "multipart", "query", "tracing"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_yaml = "0.9.34"
+sqlx = { version = "0.9.0", features = ["postgres", "runtime-tokio", "tls-rustls"] }
+thiserror = "2.0.18"
+tokio = { version = "1.52.3", features = ["rt", "rt-multi-thread", "macros", "net", "fs", "io-util"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
