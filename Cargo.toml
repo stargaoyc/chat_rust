@@ -9,7 +9,7 @@ anyhow = "1.0.102"
 axum = { version = "0.8.9", features = ["http2", "multipart", "query", "tracing"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_yaml = "0.9.34"
-sqlx = { version = "0.9.0", features = ["postgres", "runtime-tokio", "tls-rustls"] }
+sqlx = { version = "0.9.0", features = ["postgres", "runtime-tokio", "tls-rustls", "chrono", "macros", "migrate"] }
 thiserror = "2.0.18"
 tokio = { version = "1.52.3", features = ["rt", "rt-multi-thread", "macros", "net", "fs", "io-util"] }
 tracing = "0.1.44"
