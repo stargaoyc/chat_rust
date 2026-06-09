@@ -2,8 +2,11 @@ mod config;
 mod error;
 mod handlers;
 mod models;
+mod utils;
 
+use anyhow::Context;
 use handlers::*;
+use sqlx::PgPool;
 use std::{ops::Deref, sync::Arc};
 
 pub use error::AppError;
@@ -15,6 +18,8 @@ use axum::{
 };
 pub use config::AppConfig;
 
+use crate::utils::{DecodingKey, EncodingKey};
+
 #[derive(Debug, Clone)]
 pub(crate) struct AppState {
     inner: Arc<AppStateInner>,
@@ -24,10 +29,13 @@ pub(crate) struct AppState {
 #[derive(Debug)]
 pub(crate) struct AppStateInner {
     pub(crate) config: AppConfig,
+    pub(crate) dk: DecodingKey,
+    pub(crate) ek: EncodingKey,
+    pub(crate) db_pool: PgPool,
 }
 
-pub fn get_router(config: AppConfig) -> Router {
-    let state = AppState::new(config);
+pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
+    let state = AppState::try_new(config).await?;
 
     let api = Router::new()
         .route("/signin", post(signin_handler))
@@ -41,10 +49,12 @@ pub fn get_router(config: AppConfig) -> Router {
         )
         .route("/chat/{id}/messages", get(list_messages_handler));
 
-    Router::new()
+    let app = Router::new()
         .route("/", get(index_handler))
         .nest("/api", api)
-        .with_state(state)
+        .with_state(state);
+
+    Ok(app)
 }
 
 impl Deref for AppState {
@@ -56,9 +66,20 @@ impl Deref for AppState {
 }
 
 impl AppState {
-    pub fn new(config: AppConfig) -> Self {
-        Self {
-            inner: Arc::new(AppStateInner { config }),
-        }
+    pub async fn try_new(config: AppConfig) -> Result<Self, AppError> {
+        let dk = DecodingKey::load(&config.auth.pk).context("load pk failed")?;
+        let ek = EncodingKey::load(&config.auth.sk).context("load sk failed")?;
+        let db_pool = PgPool::connect(&config.server.db_url)
+            .await
+            .context("db connection failed")?;
+
+        Ok(Self {
+            inner: Arc::new(AppStateInner {
+                config,
+                dk,
+                ek,
+                db_pool,
+            }),
+        })
     }
 }

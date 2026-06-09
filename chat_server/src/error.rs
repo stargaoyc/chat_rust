@@ -9,4 +9,7 @@ pub enum AppError {
 
     #[error("password hashing error: {0}")]
     PasswordHashing(#[from] argon2::password_hash::Error),
+
+    #[error("JWT error: {0}")]
+    Jwt(#[from] jwt_simple::Error),
 }
