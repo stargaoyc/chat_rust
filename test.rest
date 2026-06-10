@@ -1,0 +1,27 @@
+### 注册用户
+POST http://localhost:6688/api/signup
+Content-Type: application/json
+
+{
+    "fullname": "testuser",
+    "email": "testuser@example.com",
+    "password": "testpassword"
+}
+
+### 登录用户
+POST http://localhost:6688/api/signin
+Content-Type: application/json
+
+{
+    "email": "testuser@example.com",
+    "password": "testpassword"
+}
+
+### 登陆失败
+POST http://localhost:6688/api/signin
+Content-Type: application/json
+
+{
+    "email": "testuser@example.com",
+    "password": "wrongpassword"
+}

@@ -4,9 +4,23 @@ use argon2::{
     Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
     password_hash::{SaltString, rand_core::OsRng},
 };
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 use crate::{AppError, User};
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CreateUser {
+    pub fullname: String,
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SignInUser {
+    pub email: String,
+    pub password: String,
+}
 
 impl User {
     // 查找用户
@@ -21,21 +35,21 @@ impl User {
     }
 
     // 创建用户
-    pub async fn create(
-        fullname: &str,
-        email: &str,
-        password: &str,
-        pool: &PgPool,
-    ) -> Result<Self, AppError> {
-        let password_hash = hash_password(password)?;
+    pub async fn create(input: &CreateUser, pool: &PgPool) -> Result<Self, AppError> {
+        // 检查用户是否已存在
+        let user = Self::find_by_email(&input.email, pool).await?;
+        if user.is_some() {
+            return Err(AppError::UserAlreadyExists(input.email.clone()));
+        }
+        let password_hash = hash_password(&input.password)?;
         let user = sqlx::query_as(
             r#"
             INSERT INTO users (email, fullname, password_hash)
             VALUES ($1, $2, $3)
             RETURNING id, fullname, email, created_at"#,
         )
-        .bind(email)
-        .bind(fullname)
+        .bind(&input.email)
+        .bind(&input.fullname)
         .bind(password_hash)
         .fetch_one(pool)
         .await?;
@@ -44,22 +58,17 @@ impl User {
     }
 
     // 验证密码
-    pub async fn verify(
-        &self,
-        email: &str,
-        password: &str,
-        pool: &PgPool,
-    ) -> Result<Option<Self>, AppError> {
+    pub async fn verify(input: &SignInUser, pool: &PgPool) -> Result<Option<Self>, AppError> {
         let user: Option<User> = sqlx::query_as(
             "SELECT id, fullname, email, password_hash, created_at FROM users WHERE email = $1",
         )
-        .bind(email)
+        .bind(&input.email)
         .fetch_optional(pool)
         .await?;
         match user {
             Some(mut user) => {
                 let password_hash = mem::take(&mut user.password_hash).unwrap_or_default();
-                let is_valid = verify_password(password, &password_hash)?;
+                let is_valid = verify_password(&input.password, &password_hash)?;
                 if is_valid { Ok(Some(user)) } else { Ok(None) }
             }
             None => Ok(None),
@@ -86,9 +95,68 @@ fn verify_password(password: &str, password_hash: &str) -> Result<bool, AppError
 }
 
 #[cfg(test)]
+impl User {
+    pub fn new(id: i64, fullname: &str, email: &str) -> Self {
+        use chrono::prelude::Utc;
+
+        Self {
+            id,
+            fullname: fullname.to_string(),
+            email: email.to_string(),
+            password_hash: None,
+            created_at: Utc::now(),
+        }
+    }
+}
+
+#[cfg(test)]
+impl CreateUser {
+    pub fn new(fullname: &str, email: &str, password: &str) -> Self {
+        Self {
+            fullname: fullname.to_string(),
+            email: email.to_string(),
+            password: password.to_string(),
+        }
+    }
+}
+
+#[cfg(test)]
+impl SignInUser {
+    pub fn new(email: &str, password: &str) -> Self {
+        Self {
+            email: email.to_string(),
+            password: password.to_string(),
+        }
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use anyhow::Result;
+
+    #[sqlx::test(migrations = "../migrations")]
+    async fn create_duplicate_user_email_should_fail(pool: PgPool) -> Result<()> {
+        let email = "test@example.com";
+        let fullname = "test";
+        let password = "123456";
+
+        let input = CreateUser::new(fullname, email, password);
+
+        // 创建第一个用户
+        let user1 = User::create(&input, &pool).await?;
+        assert_eq!(user1.email, email);
+
+        // 尝试创建具有相同邮箱的第二个用户
+        let result = User::create(&input, &pool).await;
+        match result {
+            Ok(_) => panic!("Expected error when creating user with duplicate email"),
+            Err(AppError::UserAlreadyExists(e)) => assert_eq!(e, email),
+            Err(e) => panic!("Unexpected error: {:?}", e),
+        }
+
+        Ok(())
+    }
 
     #[test]
     fn hash_and_verify_password_should_work() -> Result<()> {
@@ -105,7 +173,9 @@ mod tests {
         let fullname = "test";
         let password = "123456";
 
-        let user = User::create(fullname, email, password, &pool).await?;
+        let input = CreateUser::new(fullname, email, password);
+
+        let user = User::create(&input, &pool).await?;
         assert_eq!(user.email, email);
         assert_eq!(user.fullname, fullname);
         assert!(user.id > 0);
@@ -116,7 +186,8 @@ mod tests {
         assert_eq!(found.email, email);
         assert_eq!(found.fullname, fullname);
 
-        let verified = User::verify(&user, email, password, &pool).await?;
+        let sign_in_input = SignInUser::new(email, password);
+        let verified = User::verify(&sign_in_input, &pool).await?;
         assert!(verified.is_some());
 
         Ok(())

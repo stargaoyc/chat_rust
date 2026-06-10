@@ -9,7 +9,7 @@ use handlers::*;
 use sqlx::PgPool;
 use std::{ops::Deref, sync::Arc};
 
-pub use error::AppError;
+pub use error::{AppError, ErrorOutput};
 pub use models::User;
 
 use axum::{
@@ -79,6 +79,22 @@ impl AppState {
                 dk,
                 ek,
                 db_pool,
+            }),
+        })
+    }
+}
+
+#[cfg(test)]
+impl AppState {
+    pub async fn try_new_with_pool(config: AppConfig, pool: PgPool) -> Result<Self, AppError> {
+        let dk = DecodingKey::load(&config.auth.pk).context("load pk failed")?;
+        let ek = EncodingKey::load(&config.auth.sk).context("load sk failed")?;
+        Ok(Self {
+            inner: Arc::new(AppStateInner {
+                config,
+                dk,
+                ek,
+                db_pool: pool, // 直接使用传入的测试数据库连接池
             }),
         })
     }
