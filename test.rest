@@ -8,7 +8,9 @@ Content-Type: application/json
     "password": "testpassword"
 }
 
-### 登录用户
+### 登陆成功
+
+# @name signin
 POST http://localhost:6688/api/signin
 Content-Type: application/json
 
@@ -25,3 +27,8 @@ Content-Type: application/json
     "email": "testuser@example.com",
     "password": "wrongpassword"
 }
+
+### get chat list
+@token = {{signin.response.body.token}}
+GET http://localhost:6688/api/chat
+Authorization: Bearer {{token}}

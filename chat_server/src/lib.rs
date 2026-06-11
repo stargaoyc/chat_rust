@@ -1,6 +1,7 @@
 mod config;
 mod error;
 mod handlers;
+mod middlewares;
 mod models;
 mod utils;
 
@@ -14,11 +15,15 @@ pub use models::User;
 
 use axum::{
     Router,
+    middleware::from_fn_with_state,
     routing::{get, patch, post},
 };
 pub use config::AppConfig;
 
-use crate::utils::{DecodingKey, EncodingKey};
+use crate::{
+    middlewares::{set_layer, verify_token},
+    utils::{DecodingKey, EncodingKey},
+};
 
 #[derive(Debug, Clone)]
 pub(crate) struct AppState {
@@ -38,8 +43,6 @@ pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
     let state = AppState::try_new(config).await?;
 
     let api = Router::new()
-        .route("/signin", post(signin_handler))
-        .route("/signup", post(signup_handler))
         .route("/chat", get(list_chat_handler).post(create_chat_handler))
         .route(
             "/chat/{id}",
@@ -47,14 +50,18 @@ pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
                 .delete(delete_chat_handler)
                 .post(send_message_handler),
         )
-        .route("/chat/{id}/messages", get(list_messages_handler));
+        .route("/chat/{id}/messages", get(list_messages_handler))
+        .layer(from_fn_with_state(state.clone(), verify_token))
+        // 路由不需要验证token
+        .route("/signin", post(signin_handler))
+        .route("/signup", post(signup_handler));
 
     let app = Router::new()
         .route("/", get(index_handler))
         .nest("/api", api)
         .with_state(state);
 
-    Ok(app)
+    Ok(set_layer(app))
 }
 
 impl Deref for AppState {
