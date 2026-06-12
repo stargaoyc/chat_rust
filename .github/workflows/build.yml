@@ -53,7 +53,7 @@ jobs:
       - name: Execute rust tests
         run: cargo nextest run --all-features
         env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/chat
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
       - name: Install git-cliff
         run: |
           curl -L https://github.com/orhun/git-cliff/releases/download/v2.4.0/git-cliff-2.4.0-x86_64-unknown-linux-gnu.tar.gz | tar xz
