@@ -56,7 +56,7 @@ mod tests {
     async fn signup_should_work(pool: PgPool) -> Result<()> {
         let config = AppConfig::load()?;
         let state = AppState::try_new_with_pool(config, pool).await?;
-        let input = CreateUser::new("John Doe", "john.doe@example.com", "123456");
+        let input = CreateUser::new("John Doe", "none", "john.doe@example.com", "123456");
         let ret = signup_handler(State(state), Json(input))
             .await?
             .into_response();
@@ -75,7 +75,7 @@ mod tests {
         let name = "John Doe";
         let email = "john.doe@example.com";
         let password = "123456";
-        let user = CreateUser::new(name, email, password);
+        let user = CreateUser::new(name, "none", email, password);
         User::create(&user, &state.db_pool).await?;
 
         let input = SignInUser::new(email, password);
@@ -98,7 +98,7 @@ mod tests {
         let fullname = "test";
         let password = "123456";
 
-        let input = CreateUser::new(fullname, email, password);
+        let input = CreateUser::new(fullname, "none", email, password);
         // 创建第一个用户
         signup_handler(State(state.clone()), Json(input.clone())).await?;
         let ret = signup_handler(State(state), Json(input))

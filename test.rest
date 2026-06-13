@@ -4,6 +4,7 @@ Content-Type: application/json
 
 {
     "fullname": "testuser",
+    "workspace": "test",
     "email": "testuser@example.com",
     "password": "testpassword"
 }
@@ -31,4 +32,8 @@ Content-Type: application/json
 ### get chat list
 @token = {{signin.response.body.token}}
 GET http://localhost:6688/api/chat
+Authorization: Bearer {{token}}
+
+### get user list
+GET http://localhost:6688/api/users
 Authorization: Bearer {{token}}
