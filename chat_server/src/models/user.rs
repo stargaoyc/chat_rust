@@ -161,21 +161,18 @@ mod tests {
     use super::*;
     use anyhow::Result;
 
-    #[sqlx::test(migrations = "../migrations")]
+    #[sqlx::test(migrations = "../migrations", fixtures("../../fixtures/test.sql"))]
     async fn create_duplicate_user_email_should_fail(pool: PgPool) -> Result<()> {
-        let email = "test@example.com";
-        let fullname = "test";
-        let password = "123456";
+        let email = "user1@example.com";
+        let fullname = "user1";
+        let password = "testpassword";
 
         let input = CreateUser::new(fullname, "none", email, password);
 
-        // 创建第一个用户
-        let user1 = User::create(&input, &pool).await?;
-        assert_eq!(user1.email, email);
+        // 创建重复用户
+        let user1 = User::create(&input, &pool).await;
 
-        // 尝试创建具有相同邮箱的第二个用户
-        let result = User::create(&input, &pool).await;
-        match result {
+        match user1 {
             Ok(_) => panic!("Expected error when creating user with duplicate email"),
             Err(AppError::UserAlreadyExists(e)) => assert_eq!(e, email),
             Err(e) => panic!("Unexpected error: {:?}", e),
@@ -193,7 +190,7 @@ mod tests {
         Ok(())
     }
 
-    #[sqlx::test(migrations = "../migrations")]
+    #[sqlx::test(migrations = "../migrations", fixtures("../../fixtures/test.sql"))]
     async fn create_and_verify_user_should_work(pool: PgPool) -> anyhow::Result<()> {
         let email = "test@example.com";
         let fullname = "test";

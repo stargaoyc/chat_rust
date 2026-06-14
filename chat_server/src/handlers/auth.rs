@@ -68,15 +68,12 @@ mod tests {
         Ok(())
     }
 
-    #[sqlx::test(migrations = "../migrations")]
+    #[sqlx::test(migrations = "../migrations", fixtures("../../fixtures/test.sql"))]
     async fn signin_should_work(pool: PgPool) -> Result<()> {
         let config = AppConfig::load()?;
         let state = AppState::try_new_with_pool(config, pool).await?;
-        let name = "John Doe";
-        let email = "john.doe@example.com";
-        let password = "123456";
-        let user = CreateUser::new(name, "none", email, password);
-        User::create(&user, &state.db_pool).await?;
+        let email = "user1@example.com";
+        let password = "testpassword";
 
         let input = SignInUser::new(email, password);
         let ret = signin_handler(State(state), Json(input))
@@ -90,24 +87,22 @@ mod tests {
         Ok(())
     }
 
-    #[sqlx::test(migrations = "../migrations")]
+    #[sqlx::test(migrations = "../migrations", fixtures("../../fixtures/test.sql"))]
     async fn signup_duplicate_email_should_409(pool: PgPool) -> Result<()> {
         let config = AppConfig::load()?;
         let state = AppState::try_new_with_pool(config, pool).await?;
-        let email = "test@example.com";
-        let fullname = "test";
-        let password = "123456";
+        let email = "user1@example.com";
+        let fullname = "user1";
+        let password = "testpassword";
 
-        let input = CreateUser::new(fullname, "none", email, password);
-        // 创建第一个用户
-        signup_handler(State(state.clone()), Json(input.clone())).await?;
+        let input = CreateUser::new(fullname, "Workspace 1", email, password);
         let ret = signup_handler(State(state), Json(input))
             .await
             .into_response();
         assert_eq!(ret.status(), StatusCode::CONFLICT);
         let body_bytes = to_bytes(ret.into_body(), usize::MAX).await?;
         let msg: ErrorOutput = serde_json::from_slice(&body_bytes)?;
-        assert_eq!(msg.error, "User already exists: test@example.com");
+        assert_eq!(msg.error, "User already exists: user1@example.com");
         Ok(())
     }
 

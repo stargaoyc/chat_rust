@@ -1,3 +1,4 @@
+mod chat;
 mod user;
 mod workspace;
 
@@ -31,5 +32,25 @@ pub struct Workspace {
     pub id: i64,
     pub name: String,
     pub owner_id: i64,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, sqlx::Type)]
+#[sqlx(type_name = "chat_type", rename_all = "snake_case")]
+pub enum ChatType {
+    Single,
+    Group,
+    PublicChannel,
+    PrivateChannel,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Serialize, Deserialize, Clone, FromRow, PartialEq)]
+pub struct Chat {
+    pub id: i64,
+    pub ws_id: i64,
+    pub name: Option<String>,
+    pub r#type: ChatType,
+    pub members: Vec<i64>,
     pub created_at: DateTime<Utc>,
 }

@@ -1,7 +1,5 @@
 -- Add migration script here
 
-
-
 -- workspace for users
 CREATE TABLE IF NOT EXISTS workspaces (
     id BIGSERIAL PRIMARY KEY,
@@ -11,6 +9,9 @@ CREATE TABLE IF NOT EXISTS workspaces (
 );
 
 ALTER TABLE users
+    ADD COLUMN ws_id BIGINT REFERENCES workspaces(id);
+
+ALTER TABLE chats
     ADD COLUMN ws_id BIGINT REFERENCES workspaces(id);
 
 -- add super user and default workspace

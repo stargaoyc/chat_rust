@@ -100,32 +100,20 @@ mod tests {
         Ok(())
     }
 
-    #[sqlx::test(migrations = "../migrations")]
+    #[sqlx::test(migrations = "../migrations", fixtures("../../fixtures/test.sql"))]
     async fn test_find_workspace_by_name(pool: PgPool) -> Result<()> {
         let workspace = Workspace::find_by_name("Test Workspace", &pool).await?;
         assert!(workspace.is_none());
 
-        let workspace = Workspace::create("Test Workspace 2", 0, &pool).await?;
-        assert_eq!(workspace.name, "Test Workspace 2");
+        let workspace = Workspace::find_by_name("Workspace 1", &pool).await?;
+        assert_eq!(workspace.unwrap().name, "Workspace 1");
         Ok(())
     }
 
-    #[sqlx::test(migrations = "../migrations")]
+    #[sqlx::test(migrations = "../migrations", fixtures("../../fixtures/test.sql"))]
     async fn test_fetch_all_chat_users(pool: PgPool) -> Result<()> {
-        let workspace = Workspace::create("Test Workspace", 0, &pool).await?;
-        let input = CreateUser::new("test user", &workspace.name, "test@example.com", "123456");
-        let user1 = User::create(&input, &pool).await?;
-        let input = CreateUser::new(
-            "test user 2",
-            &workspace.name,
-            "test2@example.com",
-            "123456",
-        );
-        let user2 = User::create(&input, &pool).await?;
-        let users = Workspace::fetch_all_chat_users(workspace.id as u64, &pool).await?;
-        assert_eq!(users.len(), 2);
-        assert_eq!(users[0].id, user1.id);
-        assert_eq!(users[1].id, user2.id);
+        let users = Workspace::fetch_all_chat_users(1, &pool).await?;
+        assert_eq!(users.len(), 5);
         Ok(())
     }
 }
