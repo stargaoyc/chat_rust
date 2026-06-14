@@ -7,7 +7,10 @@ use argon2::{
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
-use crate::{AppError, User, models::Workspace};
+use crate::{
+    AppError, User,
+    models::{ChatUser, Workspace},
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CreateUser {
@@ -91,14 +94,35 @@ impl User {
     }
 }
 
-// impl CreateUser{
-//     pub async fn fetch_all(pool: &PgPool) -> Result<Vec<Self>, AppError> {
-//         let users = sqlx::query_as("SELECT fullname, email, password_hash FROM users")
-//             .fetch_all(pool)
-//             .await?;
-//         Ok(users)
-//     }
-// }
+impl ChatUser {
+    pub async fn fetch_by_ids(ids: &[i64], pool: &PgPool) -> Result<Vec<Self>, AppError> {
+        let users = sqlx::query_as(
+            r#"
+            SELECT id, email, fullname
+            FROM users
+            WHERE id = ANY($1)
+            "#,
+        )
+        .bind(ids)
+        .fetch_all(pool)
+        .await?;
+        Ok(users)
+    }
+
+    pub async fn fetch_all(ws_id: u64, pool: &PgPool) -> Result<Vec<Self>, AppError> {
+        let users = sqlx::query_as(
+            r#"
+            SELECT id, email, fullname
+            FROM users
+            WHERE ws_id = $1
+            "#,
+        )
+        .bind(ws_id as i64)
+        .fetch_all(pool)
+        .await?;
+        Ok(users)
+    }
+}
 
 fn hash_password(password: &str) -> Result<String, AppError> {
     let salt = SaltString::generate(&mut OsRng);

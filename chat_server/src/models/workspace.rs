@@ -49,7 +49,6 @@ impl Workspace {
         Ok(workspace)
     }
 
-    #[allow(dead_code)]
     pub async fn find_by_id(id: u64, pool: &PgPool) -> Result<Option<Self>, AppError> {
         let workspace =
             sqlx::query_as("SELECT id, name, owner_id, created_at FROM workspaces WHERE id = $1")

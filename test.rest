@@ -3,9 +3,31 @@ POST http://localhost:6688/api/signup
 Content-Type: application/json
 
 {
-    "fullname": "testuser",
+    "fullname": "user1",
     "workspace": "test",
-    "email": "testuser@example.com",
+    "email": "user1@example.com",
+    "password": "testpassword"
+}
+
+### 注册用户
+POST http://localhost:6688/api/signup
+Content-Type: application/json
+
+{
+    "fullname": "user2",
+    "workspace": "test",
+    "email": "user2@example.com",
+    "password": "testpassword"
+}
+
+### 注册用户
+POST http://localhost:6688/api/signup
+Content-Type: application/json
+
+{
+    "fullname": "user3",
+    "workspace": "test",
+    "email": "user3@example.com",
     "password": "testpassword"
 }
 
@@ -31,7 +53,37 @@ Content-Type: application/json
 
 ### get chat list
 @token = {{signin.response.body.token}}
-GET http://localhost:6688/api/chat
+GET http://localhost:6688/api/chats
+Authorization: Bearer {{token}}
+
+### create chat
+POST http://localhost:6688/api/chats
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "name": "Test Chat",
+    "members": [1, 2, 3],
+    "public": true
+}
+
+### get chat by id
+GET http://localhost:6688/api/chats/1
+Authorization: Bearer {{token}}
+
+### update chat
+PATCH http://localhost:6688/api/chats/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "name": "Updated Chat Name",
+    "members": [1, 2],
+    "public": false
+}
+
+### delete chat
+DELETE http://localhost:6688/api/chats/1
 Authorization: Bearer {{token}}
 
 ### get user list

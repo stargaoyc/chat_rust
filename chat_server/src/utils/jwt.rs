@@ -6,14 +6,12 @@ const JWT_DURATION: u64 = 60 * 60 * 24 * 7;
 const JWT_ISSUER: &str = "chat_server";
 const JWT_AUDIENCE: &str = "chat_web";
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct EncodingKey(Ed25519KeyPair);
-#[allow(dead_code)]
+
 #[derive(Debug)]
 pub struct DecodingKey(Ed25519PublicKey);
 
-#[allow(dead_code)]
 impl EncodingKey {
     pub fn load(pem: &str) -> Result<Self, AppError> {
         Ok(Self(Ed25519KeyPair::from_pem(pem)?))
@@ -26,7 +24,6 @@ impl EncodingKey {
     }
 }
 
-#[allow(dead_code)]
 impl DecodingKey {
     pub fn load(pem: &str) -> Result<Self, AppError> {
         Ok(Self(Ed25519PublicKey::from_pem(pem)?))

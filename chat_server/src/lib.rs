@@ -11,12 +11,12 @@ use sqlx::PgPool;
 use std::{ops::Deref, sync::Arc};
 
 pub use error::{AppError, ErrorOutput};
-pub use models::User;
+pub use models::*;
 
 use axum::{
     Router,
     middleware::from_fn_with_state,
-    routing::{get, patch, post},
+    routing::{get, post},
 };
 pub use config::AppConfig;
 
@@ -44,14 +44,15 @@ pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
 
     let api = Router::new()
         .route("/users", get(list_chat_users_handler))
-        .route("/chat", get(list_chat_handler).post(create_chat_handler))
+        .route("/chats", get(list_chat_handler).post(create_chat_handler))
         .route(
-            "/chat/{id}",
-            patch(update_chat_handler)
+            "/chats/{id}",
+            get(get_chat_handler)
+                .patch(update_chat_handler)
                 .delete(delete_chat_handler)
                 .post(send_message_handler),
         )
-        .route("/chat/{id}/messages", get(list_messages_handler))
+        .route("/chats/{id}/messages", get(list_messages_handler))
         .layer(from_fn_with_state(state.clone(), verify_token))
         // 路由不需要验证token
         .route("/signin", post(signin_handler))

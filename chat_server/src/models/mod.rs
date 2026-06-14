@@ -6,6 +6,7 @@ use chrono::prelude::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
+pub use chat::{CreateChat, UpdateChat};
 pub use user::{CreateUser, SignInUser};
 
 #[derive(Debug, Serialize, Deserialize, Clone, FromRow, PartialEq)]
@@ -44,7 +45,6 @@ pub enum ChatType {
     PrivateChannel,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize, Clone, FromRow, PartialEq)]
 pub struct Chat {
     pub id: i64,

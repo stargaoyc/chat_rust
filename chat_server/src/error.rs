@@ -14,8 +14,9 @@ pub enum AppError {
 
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
-    #[error("User not found")]
-    UserNotFound,
+
+    #[error("Not found: {0}")]
+    NotFound(String),
 
     #[error("password hashing error: {0}")]
     PasswordHashing(#[from] argon2::password_hash::Error),
@@ -25,6 +26,12 @@ pub enum AppError {
 
     #[error("http header parsing error: {0}")]
     HttpHeaderParsing(#[from] axum::http::header::InvalidHeaderValue),
+
+    #[error("Create chat error: {0}")]
+    CreateChatError(String),
+
+    #[error("Update chat error: {0}")]
+    UpdateChatError(String),
 }
 
 impl ErrorOutput {
@@ -40,10 +47,12 @@ impl IntoResponse for AppError {
         let status = match self {
             Self::UserAlreadyExists(_) => StatusCode::CONFLICT,
             Self::Database(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Self::UserNotFound => StatusCode::NOT_FOUND,
+            Self::NotFound(_) => StatusCode::NOT_FOUND,
             Self::PasswordHashing(_) => StatusCode::UNPROCESSABLE_ENTITY,
             Self::Jwt(_) => StatusCode::FORBIDDEN,
             Self::HttpHeaderParsing(_) => StatusCode::UNPROCESSABLE_ENTITY,
+            Self::CreateChatError(_) => StatusCode::BAD_REQUEST,
+            Self::UpdateChatError(_) => StatusCode::BAD_REQUEST,
         };
         (status, Json(ErrorOutput::new(self.to_string()))).into_response()
     }
