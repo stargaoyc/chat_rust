@@ -32,6 +32,12 @@ pub enum AppError {
 
     #[error("Update chat error: {0}")]
     UpdateChatError(String),
+
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+
+    #[error("Multiple errors: {0}")]
+    MultipleErrors(#[from] axum::extract::multipart::MultipartError),
 }
 
 impl ErrorOutput {
@@ -53,6 +59,8 @@ impl IntoResponse for AppError {
             Self::HttpHeaderParsing(_) => StatusCode::UNPROCESSABLE_ENTITY,
             Self::CreateChatError(_) => StatusCode::BAD_REQUEST,
             Self::UpdateChatError(_) => StatusCode::BAD_REQUEST,
+            Self::IoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::MultipleErrors(_) => StatusCode::BAD_REQUEST,
         };
         (status, Json(ErrorOutput::new(self.to_string()))).into_response()
     }

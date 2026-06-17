@@ -89,3 +89,20 @@ Authorization: Bearer {{token}}
 ### get user list
 GET http://localhost:6688/api/users
 Authorization: Bearer {{token}}
+
+### upload file
+POST http://localhost:6688/api/upload
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=MyBoundary
+
+--MyBoundary
+Content-Disposition: form-data; filename="xdiff1.png"
+Content-Type: application/octet-stream
+
+< /Users/tchen/snapshots/xdiff1.png
+--MyBoundary
+Content-Disposition: form-data; filename="hello.txt"
+Content-Type: text/plain
+
+Hello, World!
+--MyBoundary--

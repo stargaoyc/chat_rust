@@ -1,4 +1,5 @@
 mod chat;
+mod file;
 mod user;
 mod workspace;
 
@@ -53,4 +54,10 @@ pub struct Chat {
     pub r#type: ChatType,
     pub members: Vec<i64>,
     pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChatFile {
+    pub ext: String, // expect ext from filename or use mime type
+    pub hash: String,
 }

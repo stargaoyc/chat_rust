@@ -9,6 +9,7 @@ use anyhow::Context;
 use handlers::*;
 use sqlx::PgPool;
 use std::{ops::Deref, sync::Arc};
+use tokio::fs;
 
 pub use error::{AppError, ErrorOutput};
 pub use models::*;
@@ -53,6 +54,7 @@ pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
                 .post(send_message_handler),
         )
         .route("/chats/{id}/messages", get(list_messages_handler))
+        .route("/upload", post(upload_handler))
         .layer(from_fn_with_state(state.clone(), verify_token))
         // 路由不需要验证token
         .route("/signin", post(signin_handler))
@@ -76,6 +78,9 @@ impl Deref for AppState {
 
 impl AppState {
     pub async fn try_new(config: AppConfig) -> Result<Self, AppError> {
+        fs::create_dir_all(&config.server.base_dir)
+            .await
+            .context("create base dir failed")?;
         let dk = DecodingKey::load(&config.auth.pk).context("load pk failed")?;
         let ek = EncodingKey::load(&config.auth.sk).context("load sk failed")?;
         let db_pool = PgPool::connect(&config.server.db_url)
