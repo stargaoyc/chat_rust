@@ -3,7 +3,7 @@ use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppError, AppState, ErrorOutput, User,
+    AppError, AppState, ErrorOutput,
     models::{CreateUser, SignInUser},
 };
 
@@ -16,7 +16,7 @@ pub(crate) async fn signin_handler(
     State(state): State<AppState>,
     Json(input): Json<SignInUser>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = User::verify(&input, &state.db_pool).await?;
+    let user = state.verify_user(&input).await?;
     match user {
         Some(user) => {
             let token = state.ek.sign(user.clone())?;
@@ -33,7 +33,7 @@ pub(crate) async fn signup_handler(
     State(state): State<AppState>,
     Json(input): Json<CreateUser>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = User::create(&input, &state.db_pool).await?;
+    let user = state.create_user(&input).await?;
     let token = state.ek.sign(user.clone())?;
     // let mut header = HeaderMap::new();
     // header.insert("X-Token", HeaderValue::from_str(&token)?);
@@ -45,8 +45,6 @@ pub(crate) async fn signup_handler(
 
 #[cfg(test)]
 mod tests {
-    use crate::AppConfig;
-
     use super::*;
     use anyhow::Result;
     use axum::body::to_bytes;
@@ -54,8 +52,7 @@ mod tests {
 
     #[sqlx::test(migrations = "../migrations")]
     async fn signup_should_work(pool: PgPool) -> Result<()> {
-        let config = AppConfig::load()?;
-        let state = AppState::try_new_with_pool(config, pool).await?;
+        let state = AppState::try_new_with_pool(pool).await?;
         let input = CreateUser::new("John Doe", "none", "john.doe@example.com", "123456");
         let ret = signup_handler(State(state), Json(input))
             .await?
@@ -70,8 +67,7 @@ mod tests {
 
     #[sqlx::test(migrations = "../migrations", fixtures("../../fixtures/test.sql"))]
     async fn signin_should_work(pool: PgPool) -> Result<()> {
-        let config = AppConfig::load()?;
-        let state = AppState::try_new_with_pool(config, pool).await?;
+        let state = AppState::try_new_with_pool(pool).await?;
         let email = "user1@example.com";
         let password = "testpassword";
 
@@ -89,8 +85,7 @@ mod tests {
 
     #[sqlx::test(migrations = "../migrations", fixtures("../../fixtures/test.sql"))]
     async fn signup_duplicate_email_should_409(pool: PgPool) -> Result<()> {
-        let config = AppConfig::load()?;
-        let state = AppState::try_new_with_pool(config, pool).await?;
+        let state = AppState::try_new_with_pool(pool).await?;
         let email = "user1@example.com";
         let fullname = "user1";
         let password = "testpassword";
@@ -108,8 +103,7 @@ mod tests {
 
     #[sqlx::test(migrations = "../migrations")]
     async fn signin_with_non_existing_user_should_403(pool: PgPool) -> Result<()> {
-        let config = AppConfig::load()?;
-        let state = AppState::try_new_with_pool(config, pool).await?;
+        let state = AppState::try_new_with_pool(pool).await?;
         let input = SignInUser::new("non_existing@example.com", "123456");
         let ret = signin_handler(State(state), Json(input))
             .await

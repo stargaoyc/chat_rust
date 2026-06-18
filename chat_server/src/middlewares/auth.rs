@@ -34,7 +34,7 @@ pub async fn verify_token(
 
 #[cfg(test)]
 mod tests {
-    use crate::{AppConfig, User};
+    use crate::User;
 
     use super::*;
     use anyhow::Result;
@@ -48,8 +48,7 @@ mod tests {
 
     #[sqlx::test(migrations = "../migrations")]
     async fn verify_token_middleware_should_work(pool: PgPool) -> Result<()> {
-        let config = AppConfig::load()?;
-        let state = AppState::try_new_with_pool(config, pool).await?;
+        let state = AppState::try_new_with_pool(pool).await?;
         let user = User::new(1, "test", "test@example.com");
         let token = state.ek.sign(user)?;
 

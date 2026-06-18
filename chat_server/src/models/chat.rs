@@ -1,9 +1,8 @@
 use crate::{
-    AppError,
-    models::{Chat, ChatType, ChatUser},
+    AppError, AppState,
+    models::{Chat, ChatType},
 };
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct CreateChat {
@@ -19,8 +18,8 @@ pub struct UpdateChat {
     pub public: Option<bool>,
 }
 
-impl Chat {
-    pub async fn create(ws_id: u64, input: CreateChat, pool: &PgPool) -> Result<Self, AppError> {
+impl AppState {
+    pub async fn create_chat(&self, ws_id: u64, input: CreateChat) -> Result<Chat, AppError> {
         let len = input.members.len();
         if len < 2 {
             return Err(AppError::CreateChatError(
@@ -46,7 +45,7 @@ impl Chat {
             }
         };
 
-        let users = ChatUser::fetch_by_ids(&input.members, pool).await?;
+        let users = self.fetch_chat_user_by_ids(&input.members).await?;
         if users.len() != len {
             return Err(AppError::CreateChatError(
                 "Some members do not exist".to_string(),
@@ -64,13 +63,13 @@ impl Chat {
         .bind(input.name)
         .bind(chat_type)
         .bind(&input.members)
-        .fetch_one(pool)
+        .fetch_one(&self.db_pool)
         .await?;
 
         Ok(chat)
     }
 
-    pub async fn fetch_all(ws_id: u64, pool: &PgPool) -> Result<Vec<Self>, AppError> {
+    pub async fn fetch_all_chats(&self, ws_id: u64) -> Result<Vec<Chat>, AppError> {
         let chat = sqlx::query_as(
             r#"
             SELECT id, ws_id, name, type, members, created_at
@@ -79,13 +78,13 @@ impl Chat {
             "#,
         )
         .bind(ws_id as i64)
-        .fetch_all(pool)
+        .fetch_all(&self.db_pool)
         .await?;
 
         Ok(chat)
     }
 
-    pub async fn get_by_id(id: u64, pool: &PgPool) -> Result<Option<Self>, AppError> {
+    pub async fn get_chat_by_id(&self, id: u64) -> Result<Option<Chat>, AppError> {
         let chat = sqlx::query_as(
             r#"
             SELECT id, ws_id, name, type, members, created_at
@@ -94,13 +93,13 @@ impl Chat {
             "#,
         )
         .bind(id as i64)
-        .fetch_optional(pool)
+        .fetch_optional(&self.db_pool)
         .await?;
 
         Ok(chat)
     }
 
-    pub async fn update_by_id(id: u64, input: UpdateChat, pool: &PgPool) -> Result<Self, AppError> {
+    pub async fn update_chat_by_id(&self, id: u64, input: UpdateChat) -> Result<Chat, AppError> {
         let chat_type = if input.members.as_ref().is_some() {
             let members = input.members.as_ref().unwrap();
             let len = members.len();
@@ -116,7 +115,7 @@ impl Chat {
                 ));
             }
 
-            let users = ChatUser::fetch_by_ids(members, pool).await?;
+            let users = self.fetch_chat_user_by_ids(members).await?;
             if users.len() != len {
                 return Err(AppError::UpdateChatError(
                     "Some members do not exist".to_string(),
@@ -159,16 +158,16 @@ impl Chat {
         .bind(input.name)
         .bind(chat_type)
         .bind(&input.members)
-        .fetch_one(pool)
+        .fetch_one(&self.db_pool)
         .await?;
 
         Ok(chat)
     }
 
-    pub async fn delete_by_id(id: u64, pool: &PgPool) -> Result<(), AppError> {
+    pub async fn delete_chat_by_id(&self, id: u64) -> Result<(), AppError> {
         sqlx::query("DELETE FROM chats WHERE id = $1")
             .bind(id as i64)
-            .execute(pool)
+            .execute(&self.db_pool)
             .await?;
 
         Ok(())
@@ -194,12 +193,15 @@ impl CreateChat {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use anyhow::Result;
+    use sqlx::PgPool;
 
     #[sqlx::test(migrations = "../migrations", fixtures("../../fixtures/test.sql"))]
     async fn create_single_chat_should_work(pool: PgPool) -> Result<()> {
+        let state = AppState::try_new_with_pool(pool).await?;
         let input = CreateChat::new("", &[1, 2], false);
-        let chat = Chat::create(1, input, &pool).await?;
+        let chat = state.create_chat(1, input).await?;
         assert_eq!(chat.ws_id, 1);
         assert_eq!(chat.members, vec![1, 2]);
         assert_eq!(chat.r#type, ChatType::Single);
@@ -208,8 +210,9 @@ mod tests {
 
     #[sqlx::test(migrations = "../migrations", fixtures("../../fixtures/test.sql"))]
     async fn create_public_named_chat_should_work(pool: PgPool) -> Result<()> {
+        let state = AppState::try_new_with_pool(pool).await?;
         let input = CreateChat::new("test", &[1, 2, 3], true);
-        let chat = Chat::create(1, input, &pool).await?;
+        let chat = state.create_chat(1, input).await?;
         assert_eq!(chat.ws_id, 1);
         assert_eq!(chat.members, vec![1, 2, 3]);
         assert_eq!(chat.r#type, ChatType::PublicChannel);
@@ -218,7 +221,8 @@ mod tests {
 
     #[sqlx::test(migrations = "../migrations", fixtures("../../fixtures/test.sql"))]
     async fn chat_get_by_id_should_work(pool: PgPool) -> Result<()> {
-        let chat = Chat::get_by_id(1, &pool).await?.unwrap();
+        let state = AppState::try_new_with_pool(pool).await?;
+        let chat = state.get_chat_by_id(1).await?.unwrap();
         assert_eq!(chat.id, 1);
         assert_eq!(chat.ws_id, 1);
         assert_eq!(chat.members, vec![1, 2, 3, 4, 5]);
@@ -227,7 +231,8 @@ mod tests {
 
     #[sqlx::test(migrations = "../migrations", fixtures("../../fixtures/test.sql"))]
     async fn chat_fetch_all_should_work(pool: PgPool) -> Result<()> {
-        let chats = Chat::fetch_all(1, &pool).await?;
+        let state = AppState::try_new_with_pool(pool).await?;
+        let chats = state.fetch_all_chats(1).await?;
         assert_eq!(chats.len(), 4);
         Ok(())
     }
