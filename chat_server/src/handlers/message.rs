@@ -1,9 +1,13 @@
 use axum::{
     Extension, Json,
-    extract::{Multipart, State},
+    body::Body,
+    extract::{Multipart, Path, State},
+    http::HeaderValue,
     response::IntoResponse,
+    response::Response,
 };
-use tokio::fs;
+use tokio::fs::{self, File};
+use tokio_util::io::ReaderStream;
 use tracing::warn;
 
 use crate::{AppError, AppState, ChatFile, User};
@@ -47,4 +51,35 @@ pub(crate) async fn upload_handler(
     }
 
     Ok(Json(files))
+}
+
+pub(crate) async fn download_file_handler(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+    Path((ws_id, path)): Path<(u64, String)>,
+) -> Result<impl IntoResponse, AppError> {
+    if user.ws_id as u64 != ws_id {
+        return Err(AppError::NotFound(
+            "File does not exist or you are not authorized".to_string(),
+        ));
+    }
+    let base_dir = state.config.server.base_dir.join(ws_id.to_string());
+    let path = base_dir.join(path);
+    let file = match File::open(&path).await {
+        Ok(f) => f,
+        Err(_) => {
+            return Err(AppError::NotFound("File does not exist".to_string()));
+        }
+    };
+
+    let mime = mime_guess::from_path(&path).first_or_octet_stream();
+    // 流式
+    let stream = ReaderStream::new(file); // 将 File 转为 Stream
+    let body = Body::from_stream(stream);
+    let mut response = Response::new(body);
+    response
+        .headers_mut()
+        .insert("Content-Type", HeaderValue::from_str(mime.as_ref())?);
+
+    Ok(response)
 }
