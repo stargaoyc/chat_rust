@@ -22,6 +22,7 @@ pub struct SignInUser {
     pub password: String,
 }
 
+#[allow(dead_code)]
 impl AppState {
     // 查找用户
     pub async fn find_user_by_email(&self, email: &str) -> Result<Option<User>, AppError> {
@@ -29,6 +30,18 @@ impl AppState {
             "SELECT id, ws_id, fullname, email, created_at FROM users WHERE email = $1",
         )
         .bind(email)
+        .fetch_optional(&self.db_pool)
+        .await?;
+
+        Ok(user)
+    }
+
+    // find user by id
+    pub async fn find_user_by_id(&self, id: i64) -> Result<Option<User>, AppError> {
+        let user = sqlx::query_as(
+            "SELECT id, ws_id, fullname, email, created_at FROM users WHERE id = $1",
+        )
+        .bind(id)
         .fetch_optional(&self.db_pool)
         .await?;
 

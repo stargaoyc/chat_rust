@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
 pub use chat::{CreateChat, UpdateChat};
+pub use messages::{CreateMessage, ListMessages};
 pub use user::{CreateUser, SignInUser};
 
 #[derive(Debug, Serialize, Deserialize, Clone, FromRow, PartialEq)]

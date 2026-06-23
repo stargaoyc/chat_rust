@@ -22,7 +22,7 @@ use axum::{
 pub use config::AppConfig;
 
 use crate::{
-    middlewares::{set_layer, verify_token},
+    middlewares::{set_layer, verify_chat, verify_token},
     utils::{DecodingKey, EncodingKey},
 };
 
@@ -43,17 +43,21 @@ pub(crate) struct AppStateInner {
 pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
     let state = AppState::try_new(config).await?;
 
-    let api = Router::new()
-        .route("/users", get(list_chat_users_handler))
-        .route("/chats", get(list_chat_handler).post(create_chat_handler))
+    let chat = Router::new()
         .route(
-            "/chats/{id}",
+            "/{id}",
             get(get_chat_handler)
                 .patch(update_chat_handler)
                 .delete(delete_chat_handler)
                 .post(send_message_handler),
         )
-        .route("/chats/{id}/messages", get(list_messages_handler))
+        .route("/{id}/messages", get(list_messages_handler))
+        .layer(from_fn_with_state(state.clone(), verify_chat))
+        .route("/", get(list_chat_handler).post(create_chat_handler));
+
+    let api = Router::new()
+        .route("/users", get(list_chat_users_handler))
+        .nest("/chats", chat)
         .route("/upload", post(upload_handler))
         .route("/files/{ws_id}/{*path}", get(download_file_handler))
         .layer(from_fn_with_state(state.clone(), verify_token))

@@ -21,3 +21,15 @@ INSERT INTO chats (ws_id, name, type, members)
 INSERT INTO chats (ws_id, type, members)
     VALUES (1, 'single', '{1,2}'),
     (1, 'group', '{1,3,4}');
+
+INSERT into messages (chat_id, sender_id, content)
+    VALUES (1, 1, 'Hello, World!'),
+    (1, 2, 'Hello, World!'),
+    (1, 3, 'Hello, World!'),
+    (1, 4, 'Hello, World!'),
+    (1, 5, 'Hello, World!'),
+    (1, 2, 'Hello, Private!'),
+    (1, 3, 'Hello, Private!'),
+    (1, 5, 'Hello, World!'),
+    (1, 2, 'Hello, Private!'),
+    (1, 3, 'Hello, Private!');

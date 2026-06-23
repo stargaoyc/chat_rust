@@ -172,6 +172,22 @@ impl AppState {
 
         Ok(())
     }
+
+    pub async fn is_member_of_chat(&self, chat_id: u64, user_id: u64) -> Result<bool, AppError> {
+        let is_member = sqlx::query(
+            r#"
+            SELECT 1
+            FROM chats
+            WHERE id = $1 AND $2 = ANY(members)
+            "#,
+        )
+        .bind(chat_id as i64)
+        .bind(user_id as i64)
+        .fetch_optional(&self.db_pool)
+        .await?;
+
+        Ok(is_member.is_some())
+    }
 }
 
 #[cfg(test)]
@@ -234,6 +250,22 @@ mod tests {
         let state = AppState::try_new_with_pool(pool).await?;
         let chats = state.fetch_all_chats(1).await?;
         assert_eq!(chats.len(), 4);
+        Ok(())
+    }
+
+    #[sqlx::test(migrations = "../migrations", fixtures("../../fixtures/test.sql"))]
+    async fn chat_is_member_of_chat_should_work(pool: PgPool) -> Result<()> {
+        let state = AppState::try_new_with_pool(pool).await?;
+        assert!(state.is_member_of_chat(1, 1).await?);
+
+        // user does not exist
+        assert!(!state.is_member_of_chat(1, 6).await?);
+
+        // chat does not exist
+        assert!(!state.is_member_of_chat(999, 1).await?);
+
+        // not member of chat
+        assert!(!state.is_member_of_chat(2, 4).await?);
         Ok(())
     }
 }
