@@ -15,7 +15,6 @@ pub struct ListMessages {
     pub last_id: Option<u64>,
 }
 
-#[allow(dead_code)]
 impl AppState {
     pub async fn create_message(
         &self,

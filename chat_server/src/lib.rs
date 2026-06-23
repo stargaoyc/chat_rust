@@ -31,7 +31,6 @@ pub(crate) struct AppState {
     inner: Arc<AppStateInner>,
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct AppStateInner {
     pub(crate) config: AppConfig,
