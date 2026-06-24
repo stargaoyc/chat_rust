@@ -1,6 +1,5 @@
-use sqlx::PgPool;
-
-use crate::{AppError, AppState, models::Workspace};
+use crate::{AppError, AppState};
+use chat_core::Workspace;
 
 impl AppState {
     pub async fn create_workspace(&self, name: &str, user_id: u64) -> Result<Workspace, AppError> {
@@ -38,10 +37,12 @@ impl AppState {
 
         Ok(workspace)
     }
-}
 
-impl Workspace {
-    pub async fn update_owner(&self, owner_id: u64, pool: &PgPool) -> Result<Self, AppError> {
+    pub async fn update_workspace_owner(
+        &self,
+        id: u64,
+        owner_id: u64,
+    ) -> Result<Workspace, AppError> {
         // 更新工作区的拥有者，1）owner_id为0，表示工作区没有拥有者，可以被任何人认领；2）owner's ws_id必须与工作区的id相同，表示用户必须是工作区的成员才能认领
         let workspace = sqlx::query_as(
             r#"
@@ -52,8 +53,8 @@ impl Workspace {
             "#,
         )
         .bind(owner_id as i64)
-        .bind(self.id)
-        .fetch_one(pool)
+        .bind(id as i64)
+        .fetch_one(&self.db_pool)
         .await?;
 
         Ok(workspace)
@@ -66,6 +67,7 @@ mod tests {
 
     use super::*;
     use anyhow::Result;
+    use sqlx::PgPool;
 
     #[sqlx::test(migrations = "../migrations")]
     async fn test_create_workspace(pool: PgPool) -> Result<()> {
@@ -76,8 +78,8 @@ mod tests {
         let user = state.create_user(&input).await?;
         assert_eq!(user.ws_id, workspace.id);
 
-        let workspace = workspace
-            .update_owner(user.id as u64, &state.db_pool)
+        let workspace = state
+            .update_workspace_owner(workspace.id as u64, user.id as u64)
             .await?;
         assert_eq!(workspace.owner_id, user.id);
 

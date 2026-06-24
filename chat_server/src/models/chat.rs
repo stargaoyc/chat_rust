@@ -1,7 +1,5 @@
-use crate::{
-    AppError, AppState,
-    models::{Chat, ChatType},
-};
+use crate::{AppError, AppState};
+use chat_core::{Chat, ChatType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]

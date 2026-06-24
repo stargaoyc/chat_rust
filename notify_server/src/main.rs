@@ -1,5 +1,6 @@
 use anyhow::Result;
-use notify_server::get_router;
+use dotenvy::dotenv;
+use notify_server::{get_router, set_up_listener};
 use tokio::net::TcpListener;
 use tracing::{info, level_filters::LevelFilter};
 use tracing_subscriber::{fmt::Layer, prelude::*};
@@ -10,6 +11,10 @@ async fn main() -> Result<()> {
     tracing_subscriber::registry().with(layer).init();
 
     let addr = "0.0.0.0:6687";
+
+    dotenv().ok();
+    let url = dotenvy::var("DATABASE_URL")?;
+    set_up_listener(&url).await?;
 
     let app = get_router();
 

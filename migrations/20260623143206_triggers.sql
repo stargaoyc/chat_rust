@@ -5,7 +5,7 @@ RETURNS TRIGGER AS $$
 BEGIN
     RAISE NOTICE 'User added to chat: %', NEW;
     PERFORM pg_notify('chat_updated', jsonb_build_object(
-        'op', PG_OP,
+        'op', TG_OP,
         'old', OLD,
         'new', NEW
         )::TEXT);
@@ -23,9 +23,9 @@ CREATE TRIGGER add_to_chat_trigger
 CREATE OR REPLACE FUNCTION add_to_message()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF PG_OP = 'INSERT' THEN
+    IF TG_OP = 'INSERT' THEN
     RAISE NOTICE 'Message added to chat: %', NEW;
-    PERFORM pg_notify('chat_message_created', row_to_jsonb(NEW)::TEXT);
+    PERFORM pg_notify('chat_message_created', row_to_json(NEW)::TEXT);
     END IF;
     RETURN NEW;
 END;

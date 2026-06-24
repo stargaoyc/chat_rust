@@ -6,7 +6,8 @@ use axum::{
 };
 use tracing::info;
 
-use crate::{AppError, AppState, CreateChat, UpdateChat, User};
+use crate::{AppError, AppState, CreateChat, UpdateChat};
+use chat_core::User;
 
 pub(crate) async fn list_chat_handler(
     Extension(user): Extension<User>,

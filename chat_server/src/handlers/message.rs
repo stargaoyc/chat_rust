@@ -9,7 +9,8 @@ use tokio::fs::{self, File};
 use tokio_util::io::ReaderStream;
 use tracing::warn;
 
-use crate::{AppError, AppState, ChatFile, CreateMessage, ListMessages, User};
+use crate::{AppError, AppState, ChatFile, CreateMessage, ListMessages};
+use chat_core::User;
 
 pub(crate) async fn send_message_handler(
     Extension(user): Extension<User>,

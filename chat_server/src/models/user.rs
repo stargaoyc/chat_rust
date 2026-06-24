@@ -6,7 +6,8 @@ use argon2::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{AppError, AppState, User, models::ChatUser};
+use crate::{AppError, AppState};
+use chat_core::{ChatUser, User};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CreateUser {
@@ -79,8 +80,7 @@ impl AppState {
         .await?;
 
         if workspace.owner_id == 0 {
-            workspace
-                .update_owner(user.id as u64, &self.db_pool)
+            self.update_workspace_owner(workspace.id as u64, user.id as u64)
                 .await?;
         }
         Ok(user)
@@ -149,22 +149,6 @@ fn verify_password(password: &str, password_hash: &str) -> Result<bool, AppError
         .verify_password(password.as_bytes(), &parsed_hash)
         .is_ok();
     Ok(is_valid)
-}
-
-#[cfg(test)]
-impl User {
-    pub fn new(id: i64, fullname: &str, email: &str) -> Self {
-        use chrono::prelude::Utc;
-
-        Self {
-            id,
-            ws_id: 0,
-            fullname: fullname.to_string(),
-            email: email.to_string(),
-            password_hash: None,
-            created_at: Utc::now(),
-        }
-    }
 }
 
 #[cfg(test)]
