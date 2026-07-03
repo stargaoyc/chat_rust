@@ -23,6 +23,21 @@
             source.onmessage = function (event) {
                 console.log("Received message:", event.data);
             };
+            source.addEventListener('NewChat', function (event) {
+                console.log("Received new chat event:", event.data);
+            });
+
+            source.addEventListener('AddToChat', function (event) {
+                console.log("Received add to chat event:", event.data);
+            });
+
+            source.addEventListener('RemoveFromChat', function (event) {
+                console.log("Received remove from chat event:", event.data);
+            });
+
+            source.addEventListener('NewMessage', function (event) {
+                console.log("Received new message event:", event.data);
+            });
         </script>
     </body>
 </html>

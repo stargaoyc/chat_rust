@@ -37,6 +37,7 @@ pub struct Workspace {
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, sqlx::Type)]
 #[sqlx(type_name = "chat_type", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum ChatType {
     Single,
     Group,

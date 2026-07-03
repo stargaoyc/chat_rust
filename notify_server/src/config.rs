@@ -1,4 +1,4 @@
-use std::{env, fs::File, path::PathBuf};
+use std::{env, fs::File};
 
 use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
@@ -11,7 +11,6 @@ pub struct AppConfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuthConfig {
-    pub sk: String,
     pub pk: String,
 }
 
@@ -19,15 +18,14 @@ pub struct AuthConfig {
 pub struct ServerConfig {
     pub port: u16,
     pub db_url: String,
-    pub base_dir: PathBuf,
 }
 
 impl AppConfig {
     pub fn load() -> Result<Self> {
         let ret = match (
-            File::open("chat.yaml"),
-            File::open("/etc/config/chat.yaml"),
-            env::var("CHAT_CONFIG"),
+            File::open("notify.yaml"),
+            File::open("/etc/config/notify.yaml"),
+            env::var("NOTIFY_CONFIG"),
         ) {
             (Ok(file), _, _) => serde_yaml::from_reader(file)?,
             (_, Ok(file), _) => serde_yaml::from_reader(file)?,
