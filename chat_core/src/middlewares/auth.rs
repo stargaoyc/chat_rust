@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Request, State},
+    extract::{Query, Request, State},
     http::StatusCode,
     middleware::Next,
     response::{IntoResponse, Response},
@@ -8,21 +8,37 @@ use axum_extra::{
     TypedHeader,
     headers::{Authorization, authorization::Bearer},
 };
+use serde::Deserialize;
 use tracing::warn;
 
 use crate::middlewares::TokenVerifier;
 
+#[derive(Debug, Deserialize)]
+pub struct Params {
+    pub access_token: Option<String>,
+}
+
 pub async fn verify_token<T>(
-    TypedHeader(auth): TypedHeader<Authorization<Bearer>>,
+    auth: Option<TypedHeader<Authorization<Bearer>>>,
     State(state): State<T>,
-    mut req: Request,
-    next: Next,
+    Query(params): Query<Params>,
+    mut req: Request, // 请求对象（放在提取器之后）
+    next: Next,       // 必须放在最后
 ) -> Response
 where
     T: TokenVerifier + Clone + Send + Sync + 'static,
 {
-    let token = auth.token();
-    match state.verify(token) {
+    let token = match auth {
+        Some(TypedHeader(token)) => token.token().to_string(),
+        None => match params.access_token {
+            Some(token) => token,
+            None => {
+                warn!("No Authorization header or access_token query parameter found");
+                return (StatusCode::BAD_REQUEST, "Missing token").into_response();
+            }
+        },
+    };
+    match state.verify(&token) {
         Ok(user) => {
             req.extensions_mut().insert(user);
         }
@@ -90,6 +106,7 @@ mod tests {
             .layer(from_fn_with_state(state.clone(), verify_token::<AppState>))
             .with_state(state);
 
+        // 测试 Authorization 头
         let request = Request::builder()
             .uri("/")
             .header("Authorization", format!("Bearer {}", token))
@@ -97,13 +114,29 @@ mod tests {
         let res = app.clone().oneshot(request).await?;
         assert_eq!(res.status(), StatusCode::OK);
 
+        // 测试 access_token 查询参数
+        let request = Request::builder()
+            .uri(format!("/?access_token={}", token))
+            .body(Body::empty())?;
+        let res = app.clone().oneshot(request).await?;
+        assert_eq!(res.status(), StatusCode::OK);
+
+        // 测试没有 Authorization 头和 access_token 查询参数的情况
         let request = Request::builder().uri("/").body(Body::empty())?;
         let res = app.clone().oneshot(request).await?;
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 
+        // 测试无效的 token(请求头)
         let request = Request::builder()
             .uri("/")
             .header("Authorization", "Bearer invalid_token")
+            .body(Body::empty())?;
+        let res = app.clone().oneshot(request).await?;
+        assert_eq!(res.status(), StatusCode::FORBIDDEN);
+
+        // 测试无效的 token(查询参数)
+        let request = Request::builder()
+            .uri("/?access_token=invalid")
             .body(Body::empty())?;
         let res = app.oneshot(request).await?;
         assert_eq!(res.status(), StatusCode::FORBIDDEN);

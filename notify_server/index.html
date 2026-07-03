@@ -19,7 +19,8 @@
         <h1>SSE handler</h1>
 
         <script lang="javascript">
-            const source = new EventSource('/events');
+            const token = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3ODMwNTQzNTksImV4cCI6MTc4MzY1OTE1OSwibmJmIjoxNzgzMDU0MzU5LCJpc3MiOiJjaGF0X3NlcnZlciIsImF1ZCI6ImNoYXRfd2ViIiwiaWQiOjEsIndzX2lkIjoxLCJmdWxsbmFtZSI6InVzZXIxIiwiZW1haWwiOiJ1c2VyMUBleGFtcGxlLmNvbSIsImNyZWF0ZWRfYXQiOiIyMDI2LTA3LTAzVDA0OjUyOjI1LjIyNjg2N1oifQ.QIUw1o_qw3sVFBrIODD-_RaJCKNVsXl8sVQotS6ILcK7o9sJ3SLs6N9uqJ2_N8um3Xx3YR8gzbYOyM1iBstBDw";
+            const source = new EventSource(`/events?access_token=${token}`);
             source.onmessage = function (event) {
                 console.log("Received message:", event.data);
             };

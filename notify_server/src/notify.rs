@@ -51,10 +51,12 @@ pub async fn set_up_listener(state: AppState) -> anyhow::Result<()> {
             info!("Parsed notification: {:?}", notification);
             let users = &state.users;
             for user_id in notification.user_ids {
-                if let Some(tx) = users.get(&user_id)
-                    && let Err(e) = tx.send(notification.event.clone())
-                {
-                    warn!("Failed to send notification: {:?}", e);
+                if let Some(tx) = users.get(&user_id) {
+                    if let Err(e) = tx.send(notification.event.clone()) {
+                        warn!("Failed to send notification: {:?}", e);
+                    } else {
+                        info!("Notification sent to user {}", user_id);
+                    }
                 }
             }
         }
