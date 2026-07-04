@@ -1,22 +1,24 @@
 import { useAppStore } from '@/stores/app-store'
+import { cn } from '@/lib/cn'
 
 export function ConnectionIndicator() {
   const status = useAppStore((s) => s.sseStatus)
 
+  const statusConfig = {
+    connected: { color: '#10b981', label: '在线' },
+    reconnecting: { color: '#f59e0b', label: '重连' },
+    disconnected: { color: '#ef4444', label: '离线' },
+  }
+
+  const config = statusConfig[status]
+
   return (
-    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+    <div className="flex items-center gap-1.5">
       <span
-        className={`h-2 w-2 rounded-full ${
-          status === 'connected'
-            ? 'bg-green-500'
-            : status === 'reconnecting'
-              ? 'bg-yellow-500 animate-pulse'
-              : 'bg-red-500'
-        }`}
+        className={cn('h-2 w-2 rounded-full transition-colors duration-300', status === 'reconnecting' && 'animate-pulse')}
+        style={{ background: config.color }}
       />
-      <span>
-        {status === 'connected' ? '已连接' : status === 'reconnecting' ? '重连中...' : '已断开'}
-      </span>
+      <span className="text-xs text-muted-foreground hidden sm:inline">{config.label}</span>
     </div>
   )
 }

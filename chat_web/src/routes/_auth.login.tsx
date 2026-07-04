@@ -3,6 +3,7 @@ import { useSignin } from '@/hooks/use-auth'
 import { signinSchema } from '@/schemas/auth'
 import { toast } from 'sonner'
 import { useState } from 'react'
+import { Mail, Lock, Loader2, MessageSquare } from 'lucide-react'
 import type { SigninInput } from '@/schemas/auth'
 
 export const Route = createFileRoute('/_auth/login')({
@@ -35,47 +36,75 @@ function LoginPage() {
 
   return (
     <div className="space-y-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold">登录</h1>
-        <p className="text-muted-foreground mt-2">登录到 Chat 工作空间</p>
+      <div className="text-center space-y-2">
+        <div
+          className="mx-auto mb-3 inline-flex items-center justify-center rounded-xl"
+          style={{ width: 40, height: 40, background: 'rgba(79, 70, 229, 0.10)' }}
+        >
+          <MessageSquare size={20} style={{ color: '#4f46e5' }} />
+        </div>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">欢迎回来</h1>
+        <p className="text-sm text-muted-foreground">登录到您的 Chat 工作空间</p>
       </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">邮箱</label>
-          <input
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-            placeholder="user@example.com"
-          />
-          {errors.email && <p className="text-destructive text-xs mt-1">{errors.email}</p>}
+          <label className="label">邮箱</label>
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              <Mail size={16} />
+            </div>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              className="input pl-10"
+              placeholder="user@example.com"
+              autoComplete="email"
+            />
+          </div>
+          {errors.email && <p className="mt-1.5 text-xs text-destructive">{errors.email}</p>}
         </div>
+
         <div>
-          <label className="block text-sm font-medium mb-1">密码</label>
-          <input
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-          />
-          {errors.password && <p className="text-destructive text-xs mt-1">{errors.password}</p>}
+          <label className="label">密码</label>
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              <Lock size={16} />
+            </div>
+            <input
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+              className="input pl-10"
+              placeholder="至少 6 个字符"
+              autoComplete="current-password"
+            />
+          </div>
+          {errors.password && <p className="mt-1.5 text-xs text-destructive">{errors.password}</p>}
         </div>
+
         <button
           type="submit"
           disabled={signin.isPending}
-          className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className="btn-primary w-full"
         >
-          {signin.isPending ? '登录中...' : '登录'}
+          {signin.isPending ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              登录中
+            </>
+          ) : '登录'}
         </button>
       </form>
+
       <p className="text-center text-sm text-muted-foreground">
         没有账号？{' '}
         <button
           onClick={() => void navigate({ to: '/register' })}
-          className="text-primary underline-offset-4 hover:underline"
+          className="link"
         >
-          注册
+          创建账号
         </button>
       </p>
     </div>

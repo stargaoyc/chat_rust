@@ -40,7 +40,7 @@ async function refreshAccessToken(): Promise<string | null> {
 }
 
 export const apiClient = ky.create({
-  prefixUrl: API_BASE,
+  prefix: API_BASE,
   credentials: 'include',
   hooks: {
     beforeRequest: [
@@ -50,7 +50,7 @@ export const apiClient = ky.create({
       },
     ],
     afterResponse: [
-      async (request: Request, _options: unknown, response: Response) => {
+      async (response: Response, request: Request) => {
         if (response.status === 401) {
           const newToken = await refreshAccessToken()
           if (newToken) {
@@ -63,7 +63,7 @@ export const apiClient = ky.create({
         }
         if (!response.ok) {
           const body: ErrorOutput = await response.json().catch(() => ({ error: 'Unknown error' }))
-          throw new AppError(response.status, `HTTP_${response.status}`, body.error)
+          throw new AppError(response.status, `HTTP_${response.status}`, body.error ?? 'Unknown error')
         }
       },
     ],

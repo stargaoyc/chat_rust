@@ -3,6 +3,7 @@ import { useSignup } from '@/hooks/use-auth'
 import { signupSchema } from '@/schemas/auth'
 import { toast } from 'sonner'
 import { useState } from 'react'
+import { User, Mail, Building2, Lock, Loader2, MessageSquarePlus } from 'lucide-react'
 import type { SignupInput } from '@/schemas/auth'
 
 export const Route = createFileRoute('/_auth/register')({
@@ -20,7 +21,7 @@ function RegisterPage() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const result = signupSchema.safeParse(form)
     if (!result.success) {
@@ -42,66 +43,108 @@ function RegisterPage() {
     setForm((f) => ({ ...f, [key]: value }))
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold">注册</h1>
-        <p className="text-muted-foreground mt-2">创建新的 Chat 账号</p>
+    <div className="space-y-5">
+      <div className="text-center space-y-2">
+        <div
+          className="mx-auto mb-3 inline-flex items-center justify-center rounded-xl"
+          style={{ width: 40, height: 40, background: 'rgba(79, 70, 229, 0.10)' }}
+        >
+          <MessageSquarePlus size={20} style={{ color: '#4f46e5' }} />
+        </div>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">创建账号</h1>
+        <p className="text-sm text-muted-foreground">开始使用 Chat 协作</p>
       </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">姓名</label>
-          <input
-            value={form.fullname}
-            onChange={(e) => update('fullname', e.target.value)}
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-            placeholder="张三"
-          />
-          {errors.fullname && <p className="text-destructive text-xs mt-1">{errors.fullname}</p>}
+          <label className="label">姓名</label>
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              <User size={16} />
+            </div>
+            <input
+              value={form.fullname}
+              onChange={(e) => update('fullname', e.target.value)}
+              className="input pl-10"
+              placeholder="张三"
+              autoComplete="name"
+            />
+          </div>
+          {errors.fullname && <p className="mt-1.5 text-xs text-destructive">{errors.fullname}</p>}
         </div>
+
         <div>
-          <label className="block text-sm font-medium mb-1">邮箱</label>
-          <input
-            type="email"
-            value={form.email}
-            onChange={(e) => update('email', e.target.value)}
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-            placeholder="user@example.com"
-          />
-          {errors.email && <p className="text-destructive text-xs mt-1">{errors.email}</p>}
+          <label className="label">邮箱</label>
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              <Mail size={16} />
+            </div>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => update('email', e.target.value)}
+              className="input pl-10"
+              placeholder="user@example.com"
+              autoComplete="email"
+            />
+          </div>
+          {errors.email && <p className="mt-1.5 text-xs text-destructive">{errors.email}</p>}
         </div>
+
         <div>
-          <label className="block text-sm font-medium mb-1">工作空间</label>
-          <input
-            value={form.workspace}
-            onChange={(e) => update('workspace', e.target.value)}
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-            placeholder="my-workspace"
-          />
-          {errors.workspace && <p className="text-destructive text-xs mt-1">{errors.workspace}</p>}
+          <label className="label">工作空间</label>
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              <Building2 size={16} />
+            </div>
+            <input
+              value={form.workspace}
+              onChange={(e) => update('workspace', e.target.value)}
+              className="input pl-10"
+              placeholder="my-workspace"
+              autoComplete="organization"
+            />
+          </div>
+          {errors.workspace && <p className="mt-1.5 text-xs text-destructive">{errors.workspace}</p>}
         </div>
+
         <div>
-          <label className="block text-sm font-medium mb-1">密码</label>
-          <input
-            type="password"
-            value={form.password}
-            onChange={(e) => update('password', e.target.value)}
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-          />
-          {errors.password && <p className="text-destructive text-xs mt-1">{errors.password}</p>}
+          <label className="label">密码</label>
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              <Lock size={16} />
+            </div>
+            <input
+              type="password"
+              value={form.password}
+              onChange={(e) => update('password', e.target.value)}
+              className="input pl-10"
+              placeholder="至少 6 个字符"
+              autoComplete="new-password"
+            />
+          </div>
+          {errors.password && <p className="mt-1.5 text-xs text-destructive">{errors.password}</p>}
         </div>
+
         <button
           type="submit"
           disabled={signup.isPending}
-          className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className="btn-primary w-full"
         >
-          {signup.isPending ? '注册中...' : '注册'}
+          {signup.isPending ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              注册中
+            </>
+          ) : '创建账号'}
         </button>
       </form>
+
       <p className="text-center text-sm text-muted-foreground">
         已有账号？{' '}
         <button
           onClick={() => void navigate({ to: '/login' })}
-          className="text-primary underline-offset-4 hover:underline"
+          className="link"
         >
           登录
         </button>
