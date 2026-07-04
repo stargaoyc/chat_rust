@@ -1,4 +1,3 @@
-// @ts-nocheck — ky types incompatible with TS 7.0
 import ky from 'ky'
 import { getAccessToken, setAccessToken, clearAuth } from '@/lib/auth'
 import type { ErrorOutput } from '@/types/api'
@@ -44,25 +43,29 @@ export const apiClient = ky.create({
   credentials: 'include',
   hooks: {
     beforeRequest: [
-      (request: Request) => {
+      ({ request }) => {
         const token = getAccessToken()
         if (token) request.headers.set('Authorization', `Bearer ${token}`)
       },
     ],
     afterResponse: [
-      async (response: Response, request: Request) => {
+      async ({ response, request, options }) => {
         if (response.status === 401) {
           const newToken = await refreshAccessToken()
           if (newToken) {
-            request.headers.set('Authorization', `Bearer ${newToken}`)
-            return ky(request)
+            const headers = new Headers(request.headers)
+            headers.set('Authorization', `Bearer ${newToken}`)
+            return ky.retry({
+              request: new Request(request, { headers }),
+              ...options,
+            })
           }
           clearAuth()
           window.location.href = '/login'
           return response
         }
         if (!response.ok) {
-          const body: ErrorOutput = await response.json().catch(() => ({ error: 'Unknown error' }))
+          const body = await response.json().catch(() => ({ error: 'Unknown error' })) as ErrorOutput
           throw new AppError(response.status, `HTTP_${response.status}`, body.error ?? 'Unknown error')
         }
       },
