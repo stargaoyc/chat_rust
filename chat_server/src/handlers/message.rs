@@ -9,8 +9,8 @@ use tokio::fs::{self, File};
 use tokio_util::io::ReaderStream;
 use tracing::warn;
 
-use crate::{AppError, AppState, ChatFile, CreateMessage, ListMessages};
-use chat_core::User;
+use crate::{AppError, AppState, ChatFile, CreateMessage, ErrorOutput, ListMessages};
+use chat_core::{Message, User};
 
 pub(crate) async fn send_message_handler(
     Extension(user): Extension<User>,
@@ -22,6 +22,22 @@ pub(crate) async fn send_message_handler(
     Ok((StatusCode::CREATED, Json(msg)))
 }
 
+#[utoipa::path(
+        delete,
+        path = "/api/chats/{id}/messages",
+        params(
+            ("id" = u64, Path, description = "Chat id"),
+            ListMessages,
+        ),
+        tag = "chat",
+        responses(
+            (status = 200, description = "List messages successfully", body = [Vec<Message>]),
+            (status = 400, description = "Invalid limit or invalid query parameter", body = [ErrorOutput]),
+        ),
+        security(
+            ("token" = [])
+        )
+    )]
 pub(crate) async fn list_messages_handler(
     State(state): State<AppState>,
     Path(id): Path<u64>,

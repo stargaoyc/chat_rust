@@ -1,17 +1,27 @@
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 // use hyper::HeaderMap;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use crate::{
     AppError, AppState, ErrorOutput,
     models::{CreateUser, SignInUser},
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct AuthOutput {
     token: String,
 }
 
+#[utoipa::path(
+        post,
+        path = "/api/signin",
+        tag = "auth",
+        responses(
+            (status = 200, description = "Sign in successfully", body = [AuthOutput])
+        )
+    )]
+/// 登录用户
 pub(crate) async fn signin_handler(
     State(state): State<AppState>,
     Json(input): Json<SignInUser>,
@@ -29,6 +39,16 @@ pub(crate) async fn signin_handler(
     }
 }
 
+#[utoipa::path(
+        post,
+        path = "/api/signup",
+        tag = "auth",
+        responses(
+            (status = 201, description = "Sign up successfully", body = [AuthOutput])
+        )
+    )]
+/// 注册用户
+/// - 201: 注册成功
 pub(crate) async fn signup_handler(
     State(state): State<AppState>,
     Json(input): Json<CreateUser>,

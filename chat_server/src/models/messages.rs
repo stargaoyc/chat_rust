@@ -1,15 +1,16 @@
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+use utoipa::{IntoParams, ToSchema};
 
 use crate::{AppError, AppState, ChatFile};
 use chat_core::Message;
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct CreateMessage {
     pub content: String,
     pub files: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema, IntoParams)]
 pub struct ListMessages {
     pub limit: u64,
     pub last_id: Option<u64>,

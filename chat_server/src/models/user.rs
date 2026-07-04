@@ -5,19 +5,25 @@ use argon2::{
     password_hash::{SaltString, rand_core::OsRng},
 };
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use crate::{AppError, AppState};
 use chat_core::{ChatUser, User};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+/// 创建用户输入模型
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct CreateUser {
+    /// 用户全名
     pub fullname: String,
+    /// 用户邮箱
     pub email: String,
+    /// 工作空间名称
     pub workspace: String,
+    /// 用户密码
     pub password: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct SignInUser {
     pub email: String,
     pub password: String,

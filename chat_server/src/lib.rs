@@ -3,6 +3,7 @@ mod error;
 mod handlers;
 mod middlewares;
 mod models;
+mod openapi;
 
 use anyhow::Context;
 use chat_core::{
@@ -24,7 +25,7 @@ use axum::{
 };
 pub use config::AppConfig;
 
-use crate::middlewares::verify_chat;
+use crate::{middlewares::verify_chat, openapi::OpenapiRouter};
 
 #[derive(Debug, Clone)]
 pub struct AppState {
@@ -63,6 +64,7 @@ pub async fn get_router(state: AppState) -> Result<Router, AppError> {
         .route("/signup", post(signup_handler));
 
     let app = Router::new()
+        .openapi()
         .route("/", get(index_handler))
         .nest("/api", api)
         .with_state(state);
