@@ -7,6 +7,7 @@ use std::{ops::Deref, sync::Arc};
 
 use axum::{
     Router,
+    http::{HeaderName, HeaderValue, Method},
     middleware::from_fn_with_state,
     response::{Html, IntoResponse},
     routing::get,
@@ -16,6 +17,7 @@ use chat_core::{
     middlewares::{TokenVerifier, verify_token},
 };
 use dashmap::DashMap;
+use tower_http::cors::CorsLayer;
 
 use tokio::sync::broadcast;
 
@@ -42,10 +44,27 @@ pub async fn get_router() -> anyhow::Result<Router> {
     let config = AppConfig::load().expect("Failed to load configuration");
     let state = AppState::new(config);
     set_up_listener(state.clone()).await?;
+
+    let cors = CorsLayer::new()
+        .allow_origin([
+            "http://localhost:5173".parse::<HeaderValue>().unwrap(),
+            "http://localhost:5175".parse::<HeaderValue>().unwrap(),
+        ])
+        .allow_methods([Method::GET, Method::OPTIONS])
+        .allow_headers([
+            HeaderName::from_static("authorization"),
+            HeaderName::from_static("content-type"),
+            HeaderName::from_static("accept"),
+            HeaderName::from_static("x-requested-with"),
+            HeaderName::from_static("last-event-id"),
+        ])
+        .allow_credentials(true);
+
     let app = Router::new()
         .route("/events", get(sse_handler))
         .layer(from_fn_with_state(state.clone(), verify_token::<AppState>))
         .route("/", get(index_handler))
+        .layer(cors)
         .with_state(state.clone());
     Ok(app)
 }
