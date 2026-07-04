@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chat_server::{AppConfig, get_router};
+use chat_server::{AppConfig, AppState, get_router};
 use tokio::net::TcpListener;
 use tracing::{info, level_filters::LevelFilter};
 use tracing_subscriber::{fmt::Layer, prelude::*};
@@ -12,7 +12,8 @@ async fn main() -> Result<()> {
     let config = AppConfig::load()?;
     let addr = format!("0.0.0.0:{}", config.server.port);
 
-    let app = get_router(config).await?;
+    let state = AppState::try_new(config).await?;
+    let app = get_router(state).await?;
 
     let listener = TcpListener::bind(&addr).await?;
     info!("listen_addr: {}", addr);

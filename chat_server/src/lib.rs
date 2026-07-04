@@ -27,21 +27,19 @@ pub use config::AppConfig;
 use crate::middlewares::verify_chat;
 
 #[derive(Debug, Clone)]
-pub(crate) struct AppState {
+pub struct AppState {
     inner: Arc<AppStateInner>,
 }
 
 #[derive(Debug)]
-pub(crate) struct AppStateInner {
+pub struct AppStateInner {
     pub(crate) config: AppConfig,
     pub(crate) dk: DecodingKey,
     pub(crate) ek: EncodingKey,
     pub(crate) db_pool: PgPool,
 }
 
-pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
-    let state = AppState::try_new(config).await?;
-
+pub async fn get_router(state: AppState) -> Result<Router, AppError> {
     let chat = Router::new()
         .route(
             "/{id}",
@@ -110,7 +108,7 @@ impl AppState {
     }
 }
 
-#[cfg(test)]
+#[cfg(feature = "test-util")]
 impl AppState {
     pub async fn try_new_with_pool(pool: PgPool) -> Result<Self, AppError> {
         let config = AppConfig::load()?;

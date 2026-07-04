@@ -1,27 +1,21 @@
 use std::{convert::Infallible, time::Duration};
 
+use crate::{AppEvent, AppState};
 use axum::{
     Extension,
     extract::State,
     response::{Sse, sse::Event},
 };
-use axum_extra::{TypedHeader, headers};
 use chat_core::User;
 use tokio::sync::broadcast;
 use tokio_stream::{Stream, StreamExt, wrappers::BroadcastStream};
-use tracing::info;
-
-use crate::{AppEvent, AppState};
 
 const CHANNEL_SIZE: usize = 256;
 
 pub(crate) async fn sse_handler(
     Extension(user): Extension<User>,
     State(state): State<AppState>,
-    TypedHeader(user_agent): TypedHeader<headers::UserAgent>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    info!("`{}` connected", user_agent.as_str());
-
     let user_id = user.id as u64;
     let users = &state.users;
 
