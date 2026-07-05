@@ -4,6 +4,7 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 import { chatKeys, appendChatToCache, removeChatFromCache } from '@/hooks/use-chats'
 import { appendMessageToCache } from '@/hooks/use-messages'
+import { decodeToken } from '@/lib/auth'
 import type { AppEvent } from '@/types/events'
 import type { Chat, Message } from '@/types/models'
 
@@ -24,9 +25,14 @@ export function handleSSEEvent(event: AppEvent) {
     case 'RemoveFromChat':
       removeChatFromCache(queryClient, event.id)
       break
-    case 'NewMessage':
-      appendMessageToCache(queryClient, event.chat_id, event as unknown as Message)
+    case 'NewMessage': {
+      const currentUser = decodeToken()
+      // Skip messages sent by the current user; they are handled by useSendMessage's onSuccess.
+      if (event.sender_id !== currentUser?.id) {
+        appendMessageToCache(queryClient, event.chat_id, event as unknown as Message)
+      }
       break
+    }
   }
 }
 

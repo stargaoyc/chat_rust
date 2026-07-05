@@ -18,7 +18,7 @@ export function MessageList({
   hasNextPage,
   currentUserId,
 }: MessageListProps) {
-  const firstItemIndex = -(messages.length + 1000)
+  const firstItemIndex = Number.MAX_SAFE_INTEGER - messages.length
 
   if (messages.length === 0) {
     return (
