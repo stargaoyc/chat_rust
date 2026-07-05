@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Virtuoso } from 'react-virtuoso'
 import type { Message } from '@/types/models'
 import { MessageItem } from './message-item'
@@ -9,6 +10,7 @@ interface MessageListProps {
   fetchNextPage: () => void
   hasNextPage: boolean
   currentUserId: number
+  usersMap?: Map<number, string>
 }
 
 export function MessageList({
@@ -17,8 +19,46 @@ export function MessageList({
   fetchNextPage,
   hasNextPage,
   currentUserId,
+  usersMap,
 }: MessageListProps) {
-  const firstItemIndex = Number.MAX_SAFE_INTEGER - messages.length
+  const [firstItemIndex, setFirstItemIndex] = useState(1_000_000)
+  const loadingMoreRef = useRef(false)
+  const prevLengthRef = useRef(messages.length)
+
+  useEffect(() => {
+    const diff = messages.length - prevLengthRef.current
+    if (diff > 0 && loadingMoreRef.current) {
+      setFirstItemIndex((prev) => prev - diff)
+      loadingMoreRef.current = false
+    }
+    prevLengthRef.current = messages.length
+  }, [messages.length])
+
+  const itemContent = useCallback(
+    (_index: number, message: Message) => (
+      <MessageItem
+        message={message}
+        isOwn={message.sender_id === currentUserId}
+        senderName={usersMap?.get(message.sender_id)}
+      />
+    ),
+    [currentUserId, usersMap],
+  )
+
+  const components = useMemo(
+    () => ({
+      Header: () =>
+        isFetchingNextPage ? (
+          <div className="flex justify-center py-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 size={14} className="animate-spin" />
+              加载更多消息
+            </div>
+          </div>
+        ) : null,
+    }),
+    [isFetchingNextPage],
+  )
 
   if (messages.length === 0) {
     return (
@@ -40,28 +80,17 @@ export function MessageList({
   return (
     <Virtuoso
       firstItemIndex={firstItemIndex}
-      initialTopMostItemIndex={firstItemIndex + messages.length - 1}
+      initialTopMostItemIndex={messages.length - 1}
       data={messages}
       followOutput="smooth"
       atTopStateChange={(isAtTop) => {
         if (isAtTop && hasNextPage && !isFetchingNextPage) {
+          loadingMoreRef.current = true
           fetchNextPage()
         }
       }}
-      itemContent={(_index, message) => (
-        <MessageItem message={message} isOwn={message.sender_id === currentUserId} />
-      )}
-      components={{
-        Header: () =>
-          isFetchingNextPage ? (
-            <div className="flex justify-center py-3">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 size={14} className="animate-spin" />
-                加载更多消息
-              </div>
-            </div>
-          ) : null,
-      }}
+      itemContent={itemContent}
+      components={components}
     />
   )
 }

@@ -1,12 +1,17 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import react, { reactCompilerPreset } from '@vitejs/plugin-react'
+import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
-import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
+import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import path from 'node:path'
 
 export default defineConfig({
   plugins: [
-    TanStackRouterVite({ autoCodeSplitting: true }),
+    tanstackRouter({ autoCodeSplitting: true }),
+    babel({
+      include: /\.[jt]sx?$/,
+      presets: [reactCompilerPreset()],
+    }),
     react(),
     tailwindcss(),
   ],
@@ -14,6 +19,6 @@ export default defineConfig({
     alias: { '@': path.resolve(__dirname, './src') },
   },
   build: {
-    target: 'es2022',
+    target: 'es2024',
   },
 })

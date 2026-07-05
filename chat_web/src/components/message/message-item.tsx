@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { Message } from '@/types/models'
 import { formatMessageTime } from '@/lib/format'
 import { cn } from '@/lib/cn'
@@ -6,29 +7,51 @@ import { FileText } from 'lucide-react'
 interface MessageItemProps {
   message: Message
   isOwn: boolean
+  senderName?: string
 }
 
-export function MessageItem({ message, isOwn }: MessageItemProps) {
+function getInitials(name: string) {
+  const trimmed = name.trim()
+  if (!trimmed) return '?'
+  // For CJK names, take the first character; for Latin names, take the first letter.
+  const firstChar = trimmed[0]
+  return /\p{Unified_Ideograph}/u.test(firstChar) ? firstChar : firstChar.toUpperCase()
+}
+
+export const MessageItem = memo(function MessageItem({ message, isOwn, senderName }: MessageItemProps) {
   const isOptimistic = message.id < 0
+  const name = senderName || `用户 #${message.sender_id}`
+  const initial = getInitials(name)
 
   return (
-    <div className={cn('flex gap-3 px-4 py-2 group', isOwn ? 'justify-end' : 'justify-start')}>
-      {!isOwn && (
-        <div
-          className="flex items-center justify-center text-xs font-medium rounded-full shrink-0 mt-0.5"
-          style={{ width: 30, height: 30, background: 'rgba(79, 70, 229, 0.10)', color: '#4f46e5' }}
-        >
-          {(message.sender_id % 26 + 10).toString(36).toUpperCase()}
-        </div>
+    <div
+      className={cn(
+        'flex gap-3 px-4 py-2 group',
+        isOwn ? 'flex-row-reverse justify-start' : 'justify-start',
       )}
+    >
+      <div
+        className="flex items-center justify-center text-xs font-medium rounded-full shrink-0 mt-0.5"
+        style={{ width: 30, height: 30, background: 'rgba(79, 70, 229, 0.10)', color: '#4f46e5' }}
+        title={name}
+      >
+        {initial}
+      </div>
 
       <div className={cn('max-w-[70%] flex flex-col', isOwn ? 'items-end' : 'items-start')}>
-        {!isOwn && (
-          <div className="flex items-baseline gap-1.5 mb-0.5 px-1">
-            <span className="text-xs font-medium text-muted-foreground">用户 #{message.sender_id}</span>
-            <span className="text-xs text-muted-foreground opacity-60">{formatMessageTime(message.created_at)}</span>
-          </div>
-        )}
+        <div className="flex items-baseline gap-1.5 mb-0.5 px-1">
+          {isOwn ? (
+            <>
+              <span className="text-xs text-muted-foreground opacity-60">{formatMessageTime(message.created_at)}</span>
+              <span className="text-xs font-medium text-muted-foreground">{name}</span>
+            </>
+          ) : (
+            <>
+              <span className="text-xs font-medium text-muted-foreground">{name}</span>
+              <span className="text-xs text-muted-foreground opacity-60">{formatMessageTime(message.created_at)}</span>
+            </>
+          )}
+        </div>
 
         <div
           className={cn(
@@ -60,15 +83,12 @@ export function MessageItem({ message, isOwn }: MessageItemProps) {
           )}
         </div>
 
-        {isOwn && (
+        {isOwn && isOptimistic && (
           <div className="flex items-baseline gap-1 mt-0.5 px-1">
-            <span className="text-xs text-muted-foreground opacity-60">
-              {formatMessageTime(message.created_at)}
-              {isOptimistic && ' · 发送中...'}
-            </span>
+            <span className="text-xs text-muted-foreground opacity-60">发送中...</span>
           </div>
         )}
       </div>
     </div>
   )
-}
+})

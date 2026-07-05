@@ -1,9 +1,18 @@
 import type { User } from '@/types/models'
 
-let accessToken: string | null = null
+const TOKEN_KEY = 'chat_access_token'
+
+let accessToken: string | null = localStorage.getItem(TOKEN_KEY)
 
 export const getAccessToken = () => accessToken
-export const setAccessToken = (token: string | null) => { accessToken = token }
+export const setAccessToken = (token: string | null) => {
+  accessToken = token
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token)
+  } else {
+    localStorage.removeItem(TOKEN_KEY)
+  }
+}
 export const isAuthenticated = () => !!accessToken
 
 export function decodeToken(): User | null {
@@ -24,4 +33,5 @@ export function decodeToken(): User | null {
 
 export function clearAuth() {
   accessToken = null
+  localStorage.removeItem(TOKEN_KEY)
 }
