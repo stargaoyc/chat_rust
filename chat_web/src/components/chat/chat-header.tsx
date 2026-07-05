@@ -7,6 +7,8 @@ import { Menu, Search, MoreHorizontal, MessageSquare, X, Check } from 'lucide-re
 
 interface ChatHeaderProps {
   chat: Chat | undefined
+  searchQuery?: string
+  onSearchChange?: (query: string) => void
 }
 
 const CHAT_TYPE_LABELS: Record<string, string> = {
@@ -16,9 +18,10 @@ const CHAT_TYPE_LABELS: Record<string, string> = {
   private_channel: '私密频道',
 }
 
-export function ChatHeader({ chat }: ChatHeaderProps) {
+export function ChatHeader({ chat, searchQuery = '', onSearchChange }: ChatHeaderProps) {
   const toggleSidebar = useAppStore((s) => s.toggleSidebar)
   const [showSettings, setShowSettings] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
 
   if (!chat) {
     return (
@@ -56,9 +59,36 @@ export function ChatHeader({ chat }: ChatHeaderProps) {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button className="p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors" title="搜索消息">
-            <Search size={18} />
-          </button>
+          {!showSearch ? (
+            <button
+              onClick={() => setShowSearch(true)}
+              className="p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+              title="搜索消息"
+            >
+              <Search size={18} />
+            </button>
+          ) : (
+            <div className="flex items-center gap-1 animate-fade-in">
+              <input
+                autoFocus
+                type="text"
+                value={searchQuery}
+                onChange={(e) => onSearchChange?.(e.target.value)}
+                placeholder="搜索消息..."
+                className="input h-8 text-xs py-1 px-2 w-40 sm:w-56"
+              />
+              <button
+                onClick={() => {
+                  setShowSearch(false)
+                  onSearchChange?.('')
+                }}
+                className="p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+                title="关闭搜索"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          )}
           <button
             onClick={() => setShowSettings(true)}
             className="p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"

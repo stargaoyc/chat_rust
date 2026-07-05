@@ -27,8 +27,20 @@ export function ChatList() {
   const activeChatId = useAppStore((s) => s.activeChatId)
   const navigate = useNavigate()
   const [showCreate, setShowCreate] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const usersMap = users ? new Map(users.map((u) => [u.id, u.fullname])) : undefined
+
+  const query = searchQuery.trim().toLowerCase()
+  const filteredChats = query
+    ? chats?.filter((chat) => {
+        const name =
+          chat.type === 'single'
+            ? usersMap?.get(chat.members[0] ?? 0) ?? `用户 #${chat.members[0]}`
+            : (chat.name ?? '')
+        return name.toLowerCase().includes(query)
+      })
+    : chats
 
   if (isLoading) {
     return (
@@ -40,9 +52,9 @@ export function ChatList() {
     )
   }
 
-  const channels = chats?.filter((c) => c.type === 'public_channel' || c.type === 'private_channel') ?? []
-  const directs = chats?.filter((c) => c.type === 'single') ?? []
-  const groups = chats?.filter((c) => c.type === 'group') ?? []
+  const channels = filteredChats?.filter((c) => c.type === 'public_channel' || c.type === 'private_channel') ?? []
+  const directs = filteredChats?.filter((c) => c.type === 'single') ?? []
+  const groups = filteredChats?.filter((c) => c.type === 'group') ?? []
 
   const handleSelect = (chatId: number) => {
     useAppStore.getState().setActiveChat(chatId)
@@ -52,9 +64,15 @@ export function ChatList() {
   return (
     <div className="flex-1 overflow-auto px-2 py-2">
       <div className="flex items-center gap-2 px-1 mb-3">
-        <div className="flex-1 h-9 rounded-lg border flex items-center px-2.5 gap-2 text-muted-foreground text-xs bg-background">
-          <Search size={14} />
-          <span>搜索</span>
+        <div className="flex-1 h-9 rounded-lg border flex items-center px-2.5 gap-2 text-xs bg-background focus-within:ring-1 focus-within:ring-primary/30 transition-shadow">
+          <Search size={14} className="text-muted-foreground shrink-0" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="搜索对话..."
+            className="flex-1 bg-transparent outline-none text-foreground placeholder:text-muted-foreground"
+          />
         </div>
         <button
           onClick={() => setShowCreate(true)}

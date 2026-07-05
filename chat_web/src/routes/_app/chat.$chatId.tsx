@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useMemo, useState } from 'react'
 import { useChat } from '@/hooks/use-chats'
 import { useMessageList, useSendMessage } from '@/hooks/use-messages'
 import { useCurrentUser } from '@/hooks/use-auth'
@@ -19,16 +20,24 @@ function ChatDetailPage() {
   const sendMessage = useSendMessage(id)
   const currentUser = useCurrentUser()
   const { data: users } = useUsers()
+  const [searchQuery, setSearchQuery] = useState('')
 
   const usersMap = users
     ? new Map(users.map((u) => [u.id, u.fullname]))
     : undefined
 
+  const allMessages = messagesQuery.data?.allMessages ?? []
+  const filteredMessages = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return allMessages
+    return allMessages.filter((m) => m.content.toLowerCase().includes(query))
+  }, [allMessages, searchQuery])
+
   return (
     <div className="flex flex-col h-full">
-      <ChatHeader chat={chat} />
+      <ChatHeader chat={chat} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <MessageList
-        messages={messagesQuery.data?.allMessages ?? []}
+        messages={filteredMessages}
         isFetchingNextPage={messagesQuery.isFetchingNextPage}
         fetchNextPage={messagesQuery.fetchNextPage}
         hasNextPage={messagesQuery.hasNextPage}
