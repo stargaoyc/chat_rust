@@ -22,5 +22,5 @@ chat_server ={ path = "./chat_server"}
 notify_server ={ path = "./notify_server"}
 jwt-simple = { version = "0.12.16", default-features = false, features = ["pure-rust"] }
 tower = "0.5.3"
-tower-http = { version = "0.6.11", features = ["compression-full", "cors", "trace", "fs", "limit"] }
+tower-http = { version = "0.6.11", features = ["compression-full", "cors", "trace", "fs"] }
 utoipa = { version = "5.5.0", features = ["axum_extras", "chrono"] }

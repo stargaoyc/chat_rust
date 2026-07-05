@@ -18,14 +18,14 @@ use tokio::fs;
 pub use error::{AppError, ErrorOutput};
 pub use models::*;
 
-use axum::http::{HeaderName, HeaderValue, Method};
 use axum::{
     Router,
+    extract::DefaultBodyLimit,
+    http::{HeaderName, HeaderValue, Method},
     middleware::from_fn_with_state,
     routing::{get, post},
 };
 use tower_http::cors::CorsLayer;
-use tower_http::limit::RequestBodyLimitLayer;
 
 pub use config::AppConfig;
 
@@ -96,7 +96,9 @@ pub async fn get_router(state: AppState) -> Result<Router, AppError> {
         .route("/", get(index_handler))
         .nest("/api", api)
         .layer(cors)
-        .layer(RequestBodyLimitLayer::new(1024 * 1024 * 50)) // 50MB
+        // DefaultBodyLimit 作用于 FromRequest 提取器（如 Json、Multipart）。
+        // RequestBodyLimitLayer 是一个中间件，用于在请求到达处理器之前直接限制请求体大小，但它不会修改提取器的内部限制。
+        .layer(DefaultBodyLimit::max(1024 * 1024 * 50)) // 50MB
         .with_state(state);
 
     Ok(set_layer(app))
