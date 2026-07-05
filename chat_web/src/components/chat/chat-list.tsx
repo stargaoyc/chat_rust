@@ -23,9 +23,12 @@ const CHAT_TYPE_ICONS: Record<ChatType, typeof User> = {
 
 export function ChatList() {
   const { data: chats, isLoading } = useChatList()
+  const { data: users } = useUsers()
   const activeChatId = useAppStore((s) => s.activeChatId)
   const navigate = useNavigate()
   const [showCreate, setShowCreate] = useState(false)
+
+  const usersMap = users ? new Map(users.map((u) => [u.id, u.fullname])) : undefined
 
   if (isLoading) {
     return (
@@ -62,13 +65,13 @@ export function ChatList() {
       </div>
 
       {channels.length > 0 && (
-        <ChatSection title="频道" items={channels} activeId={activeChatId} onSelect={handleSelect} />
+        <ChatSection title="频道" items={channels} activeId={activeChatId} onSelect={handleSelect} usersMap={usersMap} />
       )}
       {groups.length > 0 && (
-        <ChatSection title="群组" items={groups} activeId={activeChatId} onSelect={handleSelect} />
+        <ChatSection title="群组" items={groups} activeId={activeChatId} onSelect={handleSelect} usersMap={usersMap} />
       )}
       {directs.length > 0 && (
-        <ChatSection title="私信" items={directs} activeId={activeChatId} onSelect={handleSelect} isDirect />
+        <ChatSection title="私信" items={directs} activeId={activeChatId} onSelect={handleSelect} isDirect usersMap={usersMap} />
       )}
 
       {chats?.length === 0 && (
@@ -112,12 +115,14 @@ function ChatSection({
   activeId,
   onSelect,
   isDirect = false,
+  usersMap,
 }: {
   title: string
   items: import('@/types/models').Chat[]
   activeId: number | null
   onSelect: (id: number) => void
   isDirect?: boolean
+  usersMap?: Map<number, string>
 }) {
   return (
     <div className="mb-2">
@@ -125,6 +130,9 @@ function ChatSection({
       {items.map((chat) => {
         const isActive = activeId === chat.id
         const Icon = CHAT_TYPE_ICONS[chat.type]
+        const directName = isDirect
+          ? usersMap?.get(chat.members[0] ?? 0) ?? `用户 #${chat.members[0]}`
+          : undefined
         return (
           <button
             key={chat.id}
@@ -146,7 +154,7 @@ function ChatSection({
                   color: isActive ? '#4f46e5' : 'var(--color-muted-foreground)',
                 }}
               >
-                {(chat.members[0] ?? '?').toString().slice(0, 2)}
+                {directName?.charAt(0) ?? '?'}
               </div>
             ) : (
               <div
@@ -162,7 +170,7 @@ function ChatSection({
               </div>
             )}
             <span className="truncate flex-1">
-              {isDirect ? `用户 #${chat.members[0]}` : chat.name ?? CHAT_TYPE_LABELS[chat.type]}
+              {isDirect ? directName : chat.name ?? CHAT_TYPE_LABELS[chat.type]}
             </span>
             {isActive && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
           </button>
