@@ -2,10 +2,11 @@
 
 ## 项目概述
 
-**chat** 是一个基于 Rust 构建的完整多人聊天应用，采用 Workspace 架构组织用户与对话。项目由三个核心 crate 组成：`chat_server` 提供 REST API 服务，`notify_server` 通过 SSE 推送实时通知，`chat_core` 封装共享模型与中间件。后端使用 PostgreSQL 存储，利用数据库触发器 + `LISTEN/NOTIFY` 实现消息实时推送，是 Rust Web 全栈开发的综合实践项目。
+**chat** 是一个基于 Rust + React 构建的完整多人聊天应用，采用 Workspace 架构组织用户与对话。后端由三个 Rust crate 组成：`chat_server` 提供 REST API 服务，`notify_server` 通过 SSE 推送实时通知，`chat_core` 封装共享模型与中间件；前端 `chat_web` 基于 React 19 + TanStack 全家桶 + Tailwind CSS 4 构建现代实时聊天界面。后端使用 PostgreSQL 存储，利用数据库触发器 + `LISTEN/NOTIFY` 实现消息实时推送，是 Rust Web 全栈开发的综合实践项目。
 
 ### 主要技术栈
 
+**后端 (Rust)**:
 - **语言**: Rust (Edition 2024)
 - **Web 框架**: `axum` (HTTP, multipart, query, tracing)
 - **数据库**: `sqlx` (PostgreSQL, 异步, 编译期 SQL 检查)
@@ -13,12 +14,25 @@
 - **密码哈希**: `argon2`
 - **实时通知**: SSE (Server-Sent Events) + PostgreSQL `LISTEN/NOTIFY`
 - **API 文档**: `utoipa` (OpenAPI 3.0, Swagger UI / ReDoc / RapiDoc)
-- **中间件**: `tower-http` (压缩, CORS, 追踪, 静态文件)
+- **中间件**: `tower-http` (压缩, CORS, 追踪, 静态文件, 请求体限制)
 - **序列化**: `serde` / `serde_json` / `serde_yaml`
 - **错误处理**: `thiserror` / `anyhow`
 - **日志追踪**: `tracing` / `tracing-subscriber`
 - **时间处理**: `chrono`
 - **并发容器**: `dashmap`
+
+**前端 (React)**:
+- **框架**: React 19 + TypeScript 7
+- **构建**: Vite 8 (Rolldown) + React Compiler
+- **路由**: TanStack Router 1.170 (文件路由, 自动代码分割)
+- **数据**: TanStack Query 5.101 (缓存, 乐观更新, 无限滚动)
+- **样式**: Tailwind CSS 4 (@theme 设计系统)
+- **校验**: Zod 4
+- **状态**: Zustand 5 (客户端 UI 状态)
+- **HTTP**: ky 2 (401 自动刷新)
+- **实时**: @microsoft/fetch-event-source (SSE, 指数退避重连)
+- **虚拟列表**: react-virtuoso 4
+- **包管理**: pnpm
 
 ## 项目结构
 
@@ -45,7 +59,7 @@ chat/
 ├── chat_server/              # REST API 服务器 (端口 6688)
 │   ├── src/
 │   │   ├── main.rs           # 入口: 加载配置, 绑定 TCP, 启动服务
-│   │   ├── lib.rs            # AppState, 路由定义
+│   │   ├── lib.rs            # AppState, 路由定义, CORS
 │   │   ├── config.rs         # AppConfig: YAML 配置加载
 │   │   ├── error.rs          # AppError 枚举 + IntoResponse
 │   │   ├── openapi.rs        # OpenAPI 文档配置
@@ -70,13 +84,32 @@ chat/
 ├── notify_server/            # SSE 实时通知服务器 (端口 6687)
 │   ├── src/
 │   │   ├── main.rs           # 入口: 绑定 0.0.0.0:6687
-│   │   ├── lib.rs            # AppState, 路由, SSE handler
+│   │   ├── lib.rs            # AppState, 路由, SSE handler, CORS
 │   │   ├── config.rs         # AppConfig: YAML 配置加载
 │   │   ├── error.rs          # AppError
 │   │   ├── sse.rs            # SSE handler: 按用户广播通道
 │   │   └── notify.rs         # PgListener: 监听 PostgreSQL NOTIFY
 │   ├── notify.yaml           # 服务器配置
 │   └── index.html            # SSE 测试页面 (JavaScript EventSource)
+├── chat_web/                 # Web 前端 (React + TypeScript + Vite)
+│   ├── src/
+│   │   ├── app.tsx           # 根组件: QueryClient + Router + SSE 事件分发
+│   │   ├── index.css         # Tailwind v4 设计系统 (@theme + 组件类)
+│   │   ├── api/              # API 客户端 (ky + 401 自动刷新)
+│   │   ├── hooks/            # TanStack Query hooks (数据层)
+│   │   ├── components/       # UI 组件
+│   │   │   ├── chat/         # chat-list, chat-header (搜索/设置)
+│   │   │   ├── message/      # message-item, message-list (虚拟滚动), message-input (拖放)
+│   │   │   └── common/       # connection-indicator (SSE 状态灯)
+│   │   ├── routes/           # TanStack Router 文件路由
+│   │   ├── schemas/          # Zod 表单校验
+│   │   ├── stores/           # Zustand 全局状态
+│   │   ├── lib/              # 工具函数 (auth, cn, format, sse)
+│   │   └── types/            # TypeScript 类型
+│   ├── DESIGN.md             # 前端设计文档 (设计系统/数据流/缓存策略)
+│   ├── README.md             # 前端说明文档
+│   ├── vite.config.ts        # Vite 8 + React Compiler + Tailwind v4
+│   └── package.json          # pnpm 依赖
 └── chat_test/                # 集成测试 crate
     ├── src/
     │   └── lib.rs
@@ -89,21 +122,43 @@ chat/
 ### 整体架构
 
 ```
-┌──────────┐     HTTP REST      ┌──────────────┐
-│  Client  │ ────────────────── │  chat_server │ (port 6688)
-│          │ ────────────────── │              │
-│          │     SSE 连接       │  notify_server│ (port 6687)
-└──────────┘                    └──────┬───────┘
-                                       │ PgListener
-                                       ▼
-                                ┌──────────────┐
-                                │  PostgreSQL   │
-                                │  (LISTEN/    │
-                                │   NOTIFY)    │
-                                └──────────────┘
+┌──────────────────┐  HTTP REST   ┌──────────────┐
+│    chat_web      │ ──────────── │  chat_server │ (port 6688)
+│  React + Vite    │              │    (axum)    │
+│                  │  SSE 连接    ├──────────────┤
+│                  │ ──────────── │notify_server │ (port 6687)
+└──────────────────┘              └──────┬───────┘
+                                         │ PgListener
+                                         ▼
+                                  ┌──────────────┐
+                                  │  PostgreSQL   │
+                                  │  (LISTEN/    │
+                                  │   NOTIFY)    │
+                                  └──────────────┘
 ```
 
-客户端通过 REST API 与 `chat_server` 交互（注册、登录、创建聊天、发送消息等），同时与 `notify_server` 建立 SSE 连接接收实时通知。数据库触发器在数据变更时通过 `pg_notify` 发送通知，`notify_server` 的 `PgListener` 监听并推送给对应用户。
+前端 `chat_web` 通过 REST API 与 `chat_server` 交互（注册、登录、创建聊天、发送消息、上传文件等），同时与 `notify_server` 建立 SSE 连接接收实时通知。数据库触发器在数据变更时通过 `pg_notify` 发送通知，`notify_server` 的 `PgListener` 监听并推送给对应用户。
+
+### chat_web - Web 前端
+
+基于 React 19 + TypeScript 7 + Vite 8 构建的实时聊天 Web 客户端。
+
+**核心技术**:
+- **TanStack Router** — 文件系统路由，自动代码分割，intent 预加载
+- **TanStack Query** — 服务端状态缓存，乐观更新，无限滚动，SSE 增量缓存更新
+- **React Compiler** — 编译时自动 useMemo/useCallback 优化
+- **Tailwind CSS 4** — @theme 设计系统，组件类 (.btn-primary, .input, .card)
+- **Zod** — 表单运行时校验（登录/注册/创建聊天/发送消息）
+- **react-virtuoso** — 虚拟滚动消息列表，支持向上加载更多且保持滚动位置
+- **SSE + 指数退避重连** — @microsoft/fetch-event-source，连接状态指示器
+
+**核心机制**:
+- **乐观更新**: 发送消息时立即插入临时消息（id = 负数时间戳），后端确认后替换为真实消息，失败则回滚
+- **增量缓存更新**: SSE 推送 NewChat/NewMessage 时直接 setQueryData 追加，不触发全量 invalidateQueries
+- **401 Token 自动刷新**: ky hooks 拦截 401，静默刷新 token 并重试原请求
+- **文件上传**: 逐文件 XHR POST multipart，下载用 fetch + Blob
+
+详见 [chat_web/DESIGN.md](chat_web/DESIGN.md) 获取完整的前端设计文档。
 
 ### chat_core - 共享库
 
@@ -232,7 +287,12 @@ cargo run -p chat_server
 
 # 启动通知服务器
 cargo run -p notify_server
+
+# 启动前端开发服务器
+cd chat_web && pnpm install && pnpm dev
 ```
+
+前端默认监听 `http://localhost:5173`，连接后端 `chat_server:6688` 和 `notify_server:6687`。
 
 ### API 使用示例
 

@@ -25,6 +25,7 @@ use axum::{
     routing::{get, post},
 };
 use tower_http::cors::CorsLayer;
+use tower_http::limit::RequestBodyLimitLayer;
 
 pub use config::AppConfig;
 
@@ -69,7 +70,11 @@ pub async fn get_router(state: AppState) -> Result<Router, AppError> {
     let cors = CorsLayer::new()
         .allow_origin([
             "http://localhost:5173".parse::<HeaderValue>().unwrap(),
+            "http://localhost:5174".parse::<HeaderValue>().unwrap(),
             "http://localhost:5175".parse::<HeaderValue>().unwrap(),
+            "http://127.0.0.1:5173".parse::<HeaderValue>().unwrap(),
+            "http://127.0.0.1:5174".parse::<HeaderValue>().unwrap(),
+            "http://127.0.0.1:5175".parse::<HeaderValue>().unwrap(),
         ])
         .allow_methods([
             Method::GET,
@@ -91,6 +96,7 @@ pub async fn get_router(state: AppState) -> Result<Router, AppError> {
         .route("/", get(index_handler))
         .nest("/api", api)
         .layer(cors)
+        .layer(RequestBodyLimitLayer::new(1024 * 1024 * 50)) // 50MB
         .with_state(state);
 
     Ok(set_layer(app))

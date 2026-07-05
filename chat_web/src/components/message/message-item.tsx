@@ -3,6 +3,7 @@ import type { Message } from '@/types/models'
 import { formatMessageTime } from '@/lib/format'
 import { cn } from '@/lib/cn'
 import { FileText } from 'lucide-react'
+import { filesApi } from '@/api/files'
 
 interface MessageItemProps {
   message: Message
@@ -64,21 +65,41 @@ export const MessageItem = memo(function MessageItem({ message, isOwn, senderNam
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
           {message.files.length > 0 && (
             <div className="mt-1.5 space-y-1">
-              {message.files.map((url) => (
-                <a
-                  key={url}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={cn(
-                    'inline-flex items-center gap-1.5 text-xs underline underline-offset-2',
-                    isOwn ? 'text-white/80' : 'text-primary',
-                  )}
-                >
-                  <FileText size={12} />
-                  {url.split('/').pop()}
-                </a>
-              ))}
+              {message.files.map((path) => {
+                const url = filesApi.downloadUrl(path)
+                const filename = url.split('/').pop() || path
+                return (
+                  <a
+                    key={path}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      try {
+                        const blob = await filesApi.download(path)
+                        const blobUrl = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = blobUrl
+                        a.download = filename
+                        document.body.appendChild(a)
+                        a.click()
+                        a.remove()
+                        URL.revokeObjectURL(blobUrl)
+                      } catch (err) {
+                        window.open(url, '_blank', 'noopener,noreferrer')
+                      }
+                    }}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 text-xs underline underline-offset-2 cursor-pointer',
+                      isOwn ? 'text-white/80' : 'text-primary',
+                    )}
+                  >
+                    <FileText size={12} />
+                    {filename}
+                  </a>
+                )
+              })}
             </div>
           )}
         </div>

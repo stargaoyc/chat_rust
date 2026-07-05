@@ -15,17 +15,28 @@ export function MessageInput({ onSend, disabled }: MessageInputProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const uploadMutation = useFileUpload()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragOver(false)
-    const files = Array.from(e.dataTransfer.files)
+  const uploadFiles = async (files: File[]) => {
     if (files.length === 0) return
     try {
       const urls = await uploadMutation.mutateAsync(files)
       setUploadedUrls((prev) => [...prev, ...urls])
     } catch (err) {
       toast.error('文件上传失败', { description: String(err) })
+    }
+  }
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    await uploadFiles(Array.from(e.dataTransfer.files))
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await uploadFiles(Array.from(e.target.files ?? []))
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
   }
 
@@ -92,7 +103,15 @@ export function MessageInput({ onSend, disabled }: MessageInputProps) {
         </div>
 
         <div className="flex items-center gap-1 pb-0.5">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={handleFileSelect}
+            className="hidden"
+          />
           <button
+            onClick={() => fileInputRef.current?.click()}
             className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             title="上传文件"
           >

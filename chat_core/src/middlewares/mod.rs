@@ -39,6 +39,8 @@ pub fn set_layer(app: Router) -> Router {
                             .latency_unit(LatencyUnit::Micros),
                     ),
             )
+            // CompressionLayer 会包装请求体，导致 Multipart extractor 解析失败
+            // 上传文件走 /api/upload，需要原始 multipart body
             .layer(CompressionLayer::new().gzip(true).br(true).deflate(true))
             .layer(from_fn(set_request_id))
             .layer(ServerTimeLayer),
